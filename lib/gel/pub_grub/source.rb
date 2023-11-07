@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../vendor/pub_grub"
 require_relative "../../../vendor/pub_grub/lib/pub_grub/rubygems"
-
-require_relative "package"
-require_relative "../platform"
 
 module Gel::PubGrub
   class Source < Gel::Vendor::PubGrub::BasicPackageSource

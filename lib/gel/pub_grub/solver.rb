@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "source"
-
 class Gel::PubGrub::Solver < Gel::Vendor::PubGrub::VersionSolver
   def self.logger
     ::Gel::Vendor::PubGrub.logger

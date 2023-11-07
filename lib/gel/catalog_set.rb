@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "platform"
-
 class Gel::CatalogSet
   CatalogEntry = Struct.new(:catalog, :name, :version, :info) do
     def gem_version

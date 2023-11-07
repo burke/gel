@@ -2,11 +2,6 @@
 
 require "uri"
 
-require_relative "httpool"
-require_relative "util"
-require_relative "support/gem_platform"
-require_relative "vendor/ruby_digest"
-
 class Gel::Catalog
   UPDATE_CONCURRENCY = 8
 

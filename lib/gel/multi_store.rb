@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "rbconfig"
-require_relative "stub_set"
 
 class Gel::MultiStore
   VERSION = "#{RbConfig::CONFIG["ruby_version"]}"

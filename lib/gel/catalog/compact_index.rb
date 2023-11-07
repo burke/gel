@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../set"
-
 class Gel::Catalog::CompactIndex
   include Gel::Catalog::Common
   CACHE_TYPE = "index"

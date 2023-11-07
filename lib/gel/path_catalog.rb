@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "gemspec_parser"
-
 class Gel::PathCatalog
   attr_reader :path
 

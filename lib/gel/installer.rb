@@ -3,11 +3,6 @@
 require "monitor"
 require "net/http"
 
-require_relative "work_pool"
-require_relative "git_depot"
-require_relative "package"
-require_relative "package/installer"
-
 class Gel::Installer
   class SkipCatalog < Exception
   end

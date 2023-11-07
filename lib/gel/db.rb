@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "util"
-require_relative "vendor/pstore"
-
 require "monitor"
 
 class Gel::DB

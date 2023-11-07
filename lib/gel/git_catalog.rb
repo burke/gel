@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "path_catalog"
-
 class Gel::GitCatalog
   attr_reader :git_depot, :remote, :ref_type, :ref
 

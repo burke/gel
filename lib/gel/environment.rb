@@ -1,9 +1,16 @@
 # frozen_string_literal: true
 
 require "rbconfig"
-require_relative "util"
-require_relative "stdlib"
-require_relative "support/gem_platform"
+
+# in slib/rubygems.rb, we do:
+#   def require(path)
+#     require_without_gel Gel::Environment.resolve_gem_path(path)
+#   end
+#
+# If resolve_gem_path tries to resolve autoloads, it will consequently fail.
+# So, we need to make sure that anything used there is already loaded.
+_ = Gel::Util
+_ = Gel::Stdlib
 
 class Gel::Environment
   IGNORE_LIST = %w(bundler gel rubygems-update)
@@ -151,7 +158,6 @@ class Gel::Environment
   end
 
   def self.git_depot
-    require_relative "git_depot"
     @git_depot ||= Gel::GitDepot.new(store)
   end
 
@@ -161,7 +167,6 @@ class Gel::Environment
     target_platforms = Array(platforms)
 
     if lockfile && File.exist?(lockfile)
-      require_relative "resolved_gem_set"
       gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: git_depot)
       target_platforms |= gem_set.platforms if gem_set.platforms
 
@@ -173,15 +178,12 @@ class Gel::Environment
       target_platforms = [architectures.first]
     end
 
-    require_relative "work_pool"
-    require_relative "catalog"
     all_sources = (gemfile.sources | gemfile.gems.flat_map { |_, _, o| o[:source] }).compact
     local_source = all_sources.delete(:local)
     server_gems = gemfile.gems.select { |_, _, o| !o[:path] && !o[:git] }.map(&:first)
     catalog_pool = Gel::WorkPool.new(8, name: "gel-catalog")
     server_catalogs = all_sources.map { |s| Gel::Catalog.new(s, initial_gems: server_gems, work_pool: catalog_pool, **catalog_options) }
 
-    require_relative "store_catalog"
     local_catalogs = local_source ? [Gel::StoreCatalog.new(root_store(store))] : []
 
     git_sources = gemfile.gems.map { |_, _, o|
@@ -200,14 +202,10 @@ class Gel::Environment
 
     vendor_dir = File.expand_path("../vendor/cache", gemfile.filename)
     if Dir.exist?(vendor_dir)
-      require_relative "vendor_catalog"
       vendor_catalogs = [Gel::VendorCatalog.new(vendor_dir)]
     else
       vendor_catalogs = []
     end
-
-    require_relative "path_catalog"
-    require_relative "git_catalog"
 
     previous_git_catalogs = {}
     if gem_set
@@ -249,25 +247,19 @@ class Gel::Environment
       end
     end
 
-    require_relative "catalog_set"
     catalog_set = Gel::CatalogSet.new(catalogs)
 
     if solve
-      require_relative "pub_grub/solver"
-
       if gem_set
         # If we have any existing resolution, and no strategy has been
         # provided (i.e. we're doing an auto-resolve for 'gel install'
         # or similar), then default to "anything is permitted, but
         # change the least necessary to satisfy our constraints"
-
-        require_relative "pub_grub/preference_strategy"
         strategy ||= Gel::PubGrub::PreferenceStrategy.new(gem_set, {}, bump: :hold, strict: false)
       end
 
       solver = Gel::PubGrub::Solver.new(gemfile: gemfile, catalog_set: catalog_set, platforms: target_platforms, strategy: strategy)
     else
-      require_relative "null_solver"
       solver = Gel::NullSolver.new(gemfile: gemfile, catalog_set: catalog_set, platforms: target_platforms)
     end
 

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "util"
-
 class Gel::StoreGem
   @compatibility = Hash.new do |h, k|
     Gel::Support::GemRequirement.new(k).satisfied_by?(Gel::Support::GemVersion.new(RUBY_VERSION))
