@@ -1,0 +1,60 @@
+#!/bin/sh
+# Yes, this shell script is shipped as part of a rubygem. No, that isn't really
+# supported.
+#
+# The core thing we're trying to do here is: we'd reallly like to be
+# able to make the shebang line on exe/gel be '/usr/bin/env ruby --disable-gems'
+# However, that only works on macOS, because most other platforms will only
+# allow a single argument, parsing it as `/usr/bin/env 'ruby --disable-gems'`.
+# SO. We work around that by having it instead execute this script. This script
+# just re-execs ruby with --disable-gems, saving generally around 40-50ms,
+# sometimes more.
+#
+# Both gel and this file are executables of the gem, so they should be in the
+# same directory.
+#
+# If gel is installed in the recommended way via a system package manager (or
+# with `gem install --no-wrappers`), this file will be symlinked, and therefore
+# executed by /bin/sh when invoked. Unfortunately, if it's instead installed by
+# rubygems' default behaviour, it ends up as a ruby binstub, causing this file
+# to be loaded with ruby's Kernel.load, rather than executed by the OS. When
+# that happens, we've lost our opportunity to add --disable-gems, and _also_ we
+# need to tolerate this script being loaded as ruby. So, this is a polyglot
+# script, valid as ruby and also sh.
+#
+# In actuality, this would only ever _really_ be called if 'gel' was executed
+# without a binstub, but the first match on $PATH for this script _was_ a
+# binstub. This will be an uncommon case.
+
+# (see also https://notes.burke.libbey.me/ruby-shell-polyglot)
+
+# In sh, this declares a function called 'print'. The body of this function is
+# kind of valid shell: it would execute a program called '=begin' (which
+# probably doesn't exist. However, it's never called.
+#
+# In ruby, this calls 'print' with no args. print also accepts a block, but
+# (apparently) does nothing with it. We are abusing that here.
+# =begin and =end are a rarely-used feature that bounds a block comment in ruby.
+# So, from ruby's perspective, the block we pass to 'print' is actually empty:
+# =begin to =end are removed.
+print () {
+=begin
+}
+
+### Implementation for Shell ##################
+exec /usr/bin/env ruby --disable-gems "$@"
+###############################################
+exit 1 # exec should exec, but hey, just in case.
+
+# We no longer have to make any attempt to be valid shell, since shells don't
+# pre-parse, and can just guarantee an exit or exec above. This ends the
+# multiline commend, then ends the uncalled no-op block we passed to print.
+=end
+}
+
+### Implementation for Ruby ####################
+# If we're here, we assume we got here via a binstub. We were called like:
+#     ruby _gel-ruby-disable-gems /path/to/gel <gel-args>
+# However, the binstub will have edited our ARGV to just contain <gel-args>.
+load File.expand_path('gel', __dir__)
+################################################

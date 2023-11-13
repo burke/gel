@@ -9,3 +9,4 @@
 /man/man?/*.?
 
 /test/fixtures/*.gem
+/*.gem
