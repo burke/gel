@@ -10,6 +10,7 @@ module Gel
     # Note there's a similar re-exec in exe/gel
 
     exec ::Gem.ruby,
+      "--disable-gems",
       "-I", File.expand_path("../slib", __dir__),
       "--",
       File.expand_path("../exe/gel", __dir__),

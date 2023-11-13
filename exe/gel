@@ -1,10 +1,13 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env _gel-ruby-disable-gems
 # frozen_string_literal: true
+# -*- ruby -*-
+# vim: set filetype=ruby:
 
 if defined?(::Gem) && !defined?(::Gel)
   # Note there's a similar re-exec in gemlib/gel/stub.rb
 
   exec ::Gem.ruby,
+    "--disable-gems",
     "-I", File.expand_path("../slib", __dir__),
     "--",
     __FILE__,
