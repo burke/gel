@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "package"
-
 class Gel::VendorCatalog
   attr_reader :path
 

@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "resolved_gem_set"
-require_relative "git_catalog"
-require_relative "path_catalog"
-
-require_relative "support/gem_platform"
-
 class Gel::LockLoader
   attr_reader :gemfile
 
@@ -24,7 +18,6 @@ class Gel::LockLoader
     locks = {}
 
     if install
-      require_relative "installer"
       installer = Gel::Installer.new(base_store)
     end
 
@@ -80,8 +73,6 @@ class Gel::LockLoader
       else
         unless resolved_gem = resolved_gems.find { |rg| base_store.gem?(name, rg.version, rg.platform) }
           if installer
-            require_relative "catalog"
-
             catalogs = @gem_set.server_catalogs
 
             if resolved_gems.size > 1

@@ -9,6 +9,8 @@
 # TarReader reads tar files and allows iteration over their items
 
 class Gel::Support::Tar::TarReader
+  extend Gel::Autoload
+  gel_autoload(:Entry, "gel/support/tar/tar_reader/entry")
 
   include Enumerable
 
@@ -119,5 +121,3 @@ class Gel::Support::Tar::TarReader
   end
 
 end
-
-require_relative "tar_reader/entry"

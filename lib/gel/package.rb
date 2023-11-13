@@ -3,12 +3,12 @@
 require "zlib"
 require "yaml"
 
-require_relative "support/sha512"
-require_relative "support/tar"
-require_relative "vendor/ruby_digest"
-
 module Gel
   class Package
+    extend Gel::Autoload
+    gel_autoload :Installer, "gel/package/installer"
+    gel_autoload :Inspector, "gel/package/inspector"
+
     class Specification
       def initialize(inner)
         @inner = inner

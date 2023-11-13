@@ -6,8 +6,6 @@
 # Redistributed under the terms of the MIT license
 #
 
-require_relative "gem_version"
-
 ##
 # A Requirement is a set of one or more version restrictions. It supports a
 # few (<tt>=, !=, >, <, >=, <=, ~></tt>) different restriction operators.

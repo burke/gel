@@ -4,8 +4,6 @@ require "rbconfig"
 require "tempfile"
 require "shellwords"
 
-require_relative "../util"
-
 class Gel::Package::Installer
   def initialize(store)
     @store = store

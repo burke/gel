@@ -2,8 +2,6 @@
 
 require "zlib"
 
-require_relative "../set"
-
 require_relative "marshal_hacks"
 
 class Gel::Catalog::LegacyIndex

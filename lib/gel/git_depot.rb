@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "vendor/ruby_digest"
-
 class Gel::GitDepot
   attr_reader :mirror_root
 

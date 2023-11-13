@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "monitor"
-require_relative "../util"
 
 module Gel::Catalog::Common
   def initialize(uri, uri_identifier, httpool:, work_pool:, cache:)
@@ -66,8 +65,6 @@ module Gel::Catalog::Common
   end
 
   def pinboard
-    require_relative "../pinboard"
-
     @pinboard || @monitor.synchronize do
       @pinboard ||=
         begin

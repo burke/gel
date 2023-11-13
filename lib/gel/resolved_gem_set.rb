@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "set"
-
 class Gel::ResolvedGemSet
   class ResolvedGem
     attr_reader :name, :version, :platform, :deps, :set
@@ -66,11 +64,9 @@ class Gel::ResolvedGemSet
             result.catalog_uris << remote
           end
         when "PATH"
-          require_relative "path_catalog"
           catalog = Gel::PathCatalog.new(body["remote"].first)
         when "GIT"
           ref_type = [:branch, :tag, :ref].find { |t| body[t.to_s] } || :ref
-          require_relative "git_catalog"
           catalog = Gel::GitCatalog.new(git_depot, body["remote"].first, ref_type, body[ref_type.to_s]&.first, body["revision"]&.first)
         end
 
@@ -109,14 +105,10 @@ class Gel::ResolvedGemSet
   def server_catalogs
     @server_catalogs ||=
       begin
-        require_relative "catalog"
-
         remote_catalogs = catalog_uris.map { |uri| Gel::Catalog.new(uri, work_pool: catalog_pool) }
 
         vendor_path = File.expand_path("../vendor/cache", filename)
         if Dir.exist?(vendor_path)
-          require_relative "vendor_catalog"
-
           vendor_catalog = Gel::VendorCatalog.new(vendor_path)
           vendor_catalog.prepare
           [vendor_catalog] + remote_catalogs
@@ -228,7 +220,6 @@ class Gel::ResolvedGemSet
   private
 
   def catalog_pool
-    require_relative "work_pool"
     @catalog_pool ||= Gel::WorkPool.new(8, name: "gel-catalog")
   end
 end

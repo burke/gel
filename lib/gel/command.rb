@@ -1,9 +1,24 @@
 # frozen_string_literal: true
 
 require_relative "compatibility"
-require_relative "error"
 
 class Gel::Command
+  extend Gel::Autoload
+
+  gel_autoload :Help, "gel/command/help"
+  gel_autoload :Version, "gel/command/version"
+  gel_autoload :Install, "gel/command/install"
+  gel_autoload :InstallGem, "gel/command/install_gem"
+  gel_autoload :Env, "gel/command/env"
+  gel_autoload :Exec, "gel/command/exec"
+  gel_autoload :Lock, "gel/command/lock"
+  gel_autoload :Update, "gel/command/update"
+  gel_autoload :Ruby, "gel/command/ruby"
+  gel_autoload :Stub, "gel/command/stub"
+  gel_autoload :Config, "gel/command/config"
+  gel_autoload :ShellSetup, "gel/command/shell_setup"
+  gel_autoload :Open, "gel/command/open"
+
   def self.run(command_line)
     command_line = command_line.dup
     if command_name = extract_word(command_line)
@@ -107,17 +122,3 @@ class Gel::Command
   # ruby instead of being treated as an internal Gel error
   attr_accessor :reraise
 end
-
-require_relative "command/help"
-require_relative "command/version"
-require_relative "command/install"
-require_relative "command/install_gem"
-require_relative "command/env"
-require_relative "command/exec"
-require_relative "command/lock"
-require_relative "command/update"
-require_relative "command/ruby"
-require_relative "command/stub"
-require_relative "command/config"
-require_relative "command/shell_setup"
-require_relative "command/open"

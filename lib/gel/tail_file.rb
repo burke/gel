@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require "uri"
-require "net/http"
-
-require_relative "httpool"
-
 class Gel::TailFile
   # The number of redirects etc we'll follow before giving up
   MAXIMUM_CHAIN = 8
@@ -36,6 +31,9 @@ class Gel::TailFile
   end
 
   def update(force_reset: false)
+    require "uri"
+    require "net/http"
+
     uri = self.uri
 
     File.open(@filename, "a+b") do |f|

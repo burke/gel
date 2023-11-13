@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "db"
-require_relative "httpool"
-require_relative "tail_file"
-require_relative "work_pool"
-require_relative "vendor/ruby_digest"
-
 # For each URI, this stores:
 #   * the current etag
 #   * an external freshness token

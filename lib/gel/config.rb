@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "util"
-
 ##
 # Reads an optional config file ~/.config/gel/config and injects
 # authorization info from the environment $GEL_AUTH.

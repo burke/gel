@@ -24,7 +24,6 @@ class Gel::Command::Lock < Gel::Command
       end
     end
 
-    require_relative "../pub_grub/preference_strategy"
     options[:preference_strategy] = lambda do |gem_set|
       Gel::PubGrub::PreferenceStrategy.new(gem_set, overrides, bump: mode, strict: strict)
     end

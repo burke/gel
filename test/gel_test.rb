@@ -144,6 +144,8 @@ class GelTest < Minitest::Test
 
           # If these are present, they're deprecated, so don't touch them
           next if %w(TRUE FALSE NIL Fixnum Bignum Struct::Tms).include?(full_name.join("::"))
+          # If the constant is an autoload that hasn't been forced to load yet, don't force it here.
+          next if scope.autoload?(name)
 
           if ((child = scope.const_get(name)) rescue nil) && child.is_a?(::Module)
             next if parent_modules.include?(child)
