@@ -1,7 +1,23 @@
 # frozen_string_literal: true
 
-class Gel::Command::Exec < Gel::Command
+class Gel::Command::Exec < Gel::Command::Base
+  define_options(subcommands: true) do |o|
+    # It's kind of like subcommands, because as soon as we encounter
+    # a program name, we stop looking for flags to exec.
+    # The only option we support here though is --help, which we get for free.
+    o.banner = <<~BANNER.chomp
+      TODO
+
+      Usage: gel exec <program> [<args>...]
+
+      Options:
+    BANNER
+  end
+
   def run(command_line, from_stub: false)
+    opts = parse_options(command_line)
+    command_line = opts.arguments
+
     original_command = command_line.shift
     expanded_command, command_source = expand_executable(original_command)
 

@@ -1,8 +1,18 @@
 # frozen_string_literal: true
 
-class Gel::Command::InstallGem < Gel::Command
-  def run(command_line)
-    gem_name, gem_version = command_line
+class Gel::Command::InstallGem < Gel::Command::Base
+  define_options do |o|
+    o.banner = <<~BANNER.chomp
+      Install a gem into the current environment.
+
+      Usage: gel install-gem <gem> [<version>]
+
+      Options:
+    BANNER
+  end
+
+  def call(opts)
+    gem_name, gem_version = opts.arguments
 
     Gel::WorkPool.new(2) do |work_pool|
       catalog = Gel::Catalog.new("https://rubygems.org", work_pool: work_pool)

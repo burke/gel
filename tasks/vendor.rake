@@ -36,3 +36,12 @@ Automatiek::RakeTask.new("pub_grub") do |lib|
   lib.vendor_lib = "vendor/pub_grub"
   lib.license_path = "LICENSE.txt"
 end
+
+Automatiek::RakeTask.new("slop") do |lib|
+  lib.version = "subcommands"
+  lib.download = { :github => "https://github.com/burke/slop" }
+  lib.namespace = "Slop"
+  lib.prefix = "Gel::Vendor"
+  lib.vendor_lib = "vendor/slop"
+  lib.license_path = "LICENSE"
+end

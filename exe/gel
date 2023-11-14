@@ -14,5 +14,5 @@ if defined?(::Gem) && !defined?(::Gel)
     *ARGV
 end
 
-require_relative "../lib/gel/command"
-Gel::Command.run(ARGV)
+require_relative "../lib/gel/cli"
+Gel::CLI.run(ARGV)

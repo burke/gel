@@ -212,7 +212,7 @@ class Gel::Package::Installer
           RbConfig.ruby,
           "-r", File.expand_path("abortable", __dir__),
           "-r", File.expand_path("../command", __dir__),
-          "-e", "Gel::Command.run(ARGV)",
+          "-e", "Gel::CLI.run(ARGV)",
           "--",
           "exec",
           "rake",

@@ -1,8 +1,20 @@
 # frozen_string_literal: true
 
-class Gel::Command::Stub < Gel::Command
-  def run(command_line)
-    if command_line.first == "--rebuild"
+class Gel::Command::Stub < Gel::Command::Base
+  define_options do |o|
+    o.banner = <<~BANNER.chomp
+      TODO
+
+      Usage: gel stub
+
+      Options:
+    BANNER
+    o.bool '--rebuild', 'Rebuild stubs'
+  end
+
+  def call(opts)
+    command_line = opts.arguments
+    if opts[:rebuild]
       Gel::Environment.store.stub_set.rebuild!
       return
     end

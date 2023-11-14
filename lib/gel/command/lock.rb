@@ -1,6 +1,17 @@
 # frozen_string_literal: true
 
-class Gel::Command::Lock < Gel::Command
+class Gel::Command::Lock < Gel::Command::Base
+  # define_options do |o|
+  #   o.banner = <<~BANNER.chomp
+  #     TODO
+  #
+  #     Usage: gel lock
+  #
+  #     Options:
+  #   BANNER
+  # end
+
+  # TODO: integrate arguments
   def run(command_line)
     options = {}
 

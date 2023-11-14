@@ -24,6 +24,7 @@ module Gel
     gel_autoload(:PStore, "../vendor/pstore/lib/pstore")
     gel_autoload(:RubyDigest, "../vendor/ruby-digest/lib/ruby_digest")
     gel_autoload(:PubGrub, "../vendor/pub_grub/lib/pub_grub")
+    gel_autoload(:Slop, "../vendor/slop/lib/slop")
   end
 
   extend Autoload
@@ -34,6 +35,7 @@ module Gel
 
   gel_autoload(:Catalog, "gel/catalog")
   gel_autoload(:CatalogSet, "gel/catalog_set")
+  gel_autoload(:CLI, "gel/cli")
   gel_autoload(:Command, "gel/command")
   gel_autoload(:Config, "gel/config")
   gel_autoload(:DB, "gel/db")
@@ -70,7 +72,7 @@ module Gel
   gel_autoload(:WorkPool, "gel/work_pool")
 
   def self.stub(name)
-    Gel::Command.run(["stub", name, :stub, *ARGV])
+    Gel::CLI.run(["stub", name, :stub, *ARGV])
   end
 
   # This can be used to e.g. identify $LOADED_FEATURES or source_locations

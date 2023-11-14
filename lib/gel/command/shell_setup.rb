@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-class Gel::Command::ShellSetup < Gel::Command
-  def run(command_line)
+class Gel::Command::ShellSetup < Gel::Command::Base
+  def call(opts)
+    command_line = opts.arguments
     require "shellwords"
 
     shell = command_line[0] || File.basename(ENV.fetch("SHELL", "bash"))

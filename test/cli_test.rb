@@ -27,33 +27,33 @@ class CLITest < Minitest::Test
   def test_basic_help
     Gel::Command::Help.expects(:new).returns(mock(run: true))
 
-    Gel::Command.run(%W(help))
+    Gel::CLI.run(%W(help))
   end
 
   def test_help_flag
     Gel::Command::Help.expects(:new).returns(mock(run: true))
 
-    Gel::Command.run(%W(--help))
+    Gel::CLI.run(%W(--help))
   end
 
   def test_version_flag
     Gel::Command::Version.expects(:new).returns(mock(run: true))
 
-    Gel::Command.run(%W(--version))
+    Gel::CLI.run(%W(--version))
   end
 
   def test_flag_abriviations
     Gel::Command::Version.expects(:new).returns(mock(run: true))
     Gel::Command::Help.expects(:new).returns(mock(run: true))
 
-    Gel::Command.run(%W(-v))
-    Gel::Command.run(%W(-h))
+    Gel::CLI.run(%W(-v))
+    Gel::CLI.run(%W(-h))
   end
 
   def test_basic_install
     Gel::Environment.expects(:activate).with(has_entries(install: true, output: $stderr))
 
-    Gel::Command.run(%W(install))
+    Gel::CLI.run(%W(install))
   end
 
   # TODO: There's too much behaviour here, yet it's still not a full
@@ -84,7 +84,7 @@ class CLITest < Minitest::Test
 
       Dir.chdir(dir) do
         catch(:exit) do
-          Gel::Command.run(%W(exec ruby-executable some args))
+          Gel::CLI.run(%W(exec ruby-executable some args))
         end
       end
     end
@@ -110,7 +110,7 @@ class CLITest < Minitest::Test
 
       Dir.chdir(dir) do
         catch(:exit) do
-          Gel::Command.run(%W(exec shell-executable some args))
+          Gel::CLI.run(%W(exec shell-executable some args))
         end
       end
     end

@@ -20,7 +20,7 @@ class InstallGemTest < Minitest::Test
           Gel::Environment.open(store)
 
           require "gel/command"
-          Gel::Command.run(["install-gem", "rack-test", "0.6.3"])
+          Gel::CLI.run(["install-gem", "rack-test", "0.6.3"])
         END
       end
 
