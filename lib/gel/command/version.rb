@@ -12,6 +12,6 @@ class Gel::Command::Version < Gel::Command::Base
   end
 
   def call(_opts)
-    puts Gel::VERSION
+    puts "gel version #{Gel::VERSION}"
   end
 end

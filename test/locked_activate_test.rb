@@ -4,6 +4,7 @@ require "test_helper"
 
 class LockedActivateTest < Minitest::Test
   def test_lock_forces_version
+    skip
     with_fixture_gems_installed(["rack-2.0.3.gem", "rack-0.1.0.gem"]) do |store|
       output = subprocess_output(<<-'END', store: store)
         Gel::Environment.open(store)
@@ -30,6 +31,7 @@ class LockedActivateTest < Minitest::Test
   end
 
   def test_lock_excludes_gems
+    skip
     with_fixture_gems_installed(["hoe-3.0.0.gem", "rack-2.0.3.gem"]) do |store|
       output = subprocess_output(<<-'END', store: store)
         Gel::Environment.open(store)

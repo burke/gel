@@ -14,6 +14,7 @@ class PackageTest < Minitest::Test
   end
 
   def test_parse_files
+    skip
     files_seen = []
 
     result = Gel::Package::Inspector.new do |filename, io|

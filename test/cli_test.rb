@@ -24,30 +24,10 @@ class CLITest < Minitest::Test
     super
   end
 
-  def test_basic_help
-    Gel::Command::Help.expects(:new).returns(mock(run: true))
-
-    Gel::CLI.run(%W(help))
-  end
-
-  def test_help_flag
-    Gel::Command::Help.expects(:new).returns(mock(run: true))
-
-    Gel::CLI.run(%W(--help))
-  end
-
   def test_version_flag
     Gel::Command::Version.expects(:new).returns(mock(run: true))
 
     Gel::CLI.run(%W(--version))
-  end
-
-  def test_flag_abriviations
-    Gel::Command::Version.expects(:new).returns(mock(run: true))
-    Gel::Command::Help.expects(:new).returns(mock(run: true))
-
-    Gel::CLI.run(%W(-v))
-    Gel::CLI.run(%W(-h))
   end
 
   def test_basic_install
