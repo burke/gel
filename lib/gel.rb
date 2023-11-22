@@ -17,6 +17,14 @@ module Gel
   def self.self_location
     File.expand_path("..", __dir__)
   end
+
+  def self.environment
+    @environment
+  end
+
+  def self.open_environment(store)
+    @environment = Gel::Environment.new(store)
+  end
 end
 
 require_relative "gel/support/gem_version"
@@ -24,6 +32,7 @@ require_relative "gel/support/gem_requirement"
 
 require_relative "gel/config"
 require_relative "gel/god_object"
+require_relative "gel/environment"
 require_relative "gel/store"
 require_relative "gel/store_gem"
 require_relative "gel/direct_gem"
