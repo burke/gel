@@ -65,22 +65,21 @@ module Gel::GodObject::Stateless
       end
     end
 
-    def activate(active_lockfile, store, gemfile, fast: false, output: nil, error: true)
-      loaded = Gel::GodObject.load_gemfile(error: error)
-      return(active_lockfile) if loaded.nil?
+    def activate(active_lockfile, loaded_gemfile, store, active_gemfile, fast: false, output: nil)
+      return(active_lockfile) if loaded_gemfile.nil?
       return(active_lockfile) if active_lockfile
 
-      lockfile = lockfile_name(loaded.filename)
+      lockfile = lockfile_name(loaded_gemfile.filename)
       if File.exist?(lockfile)
         resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: store.git_depot)
-        resolved_gem_set = nil if !fast && lock_outdated?(loaded, resolved_gem_set)
+        resolved_gem_set = nil if !fast && lock_outdated?(loaded_gemfile, resolved_gem_set)
       end
 
       return(active_lockfile) if fast && !resolved_gem_set
 
-      resolved_gem_set ||= write_lock(store, output: output, lockfile: lockfile)
+      resolved_gem_set ||= write_lock(loaded_gemfile, store, output: output, lockfile: lockfile)
 
-      loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
+      loader = Gel::LockLoader.new(resolved_gem_set, active_gemfile)
       yield(loader)
 
       true # there is now an active lockfile
@@ -177,8 +176,7 @@ module Gel::GodObject::Stateless
       gemfile.autorequire(Gel::GodObject, gems)
     end
 
-    def write_lock(store, output: nil, lockfile: lockfile_name, **args)
-      gemfile = Gel::GodObject.load_gemfile
+    def write_lock(gemfile, store, output: nil, lockfile: lockfile_name, **args)
       gem_set = solve_for_gemfile(
         store: store, output: output, gemfile: gemfile, lockfile: lockfile,
         **args

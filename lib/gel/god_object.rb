@@ -38,7 +38,7 @@ class Gel::GodObject
     def root_store(store = store()) = Stateless.root_store(store)
     def scoped_require(gem_name, path) = Stateless.scoped_require(impl.__store, impl.__activated_gems, gem_name, path)
     def store = impl.__store
-    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.__store, output: output, lockfile: lockfile, **args)
+    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.load_gemfile, impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
   end
 
@@ -76,7 +76,7 @@ class Gel::GodObject
     end
 
     def activate(fast: false, install: false, output: nil, error: true)
-      @active_lockfile ||= Stateless.activate(@active_lockfile, @store, @gemfile, fast: fast, output: output, error: error) do |loader|
+      @active_lockfile ||= Stateless.activate(@active_lockfile, load_gemfile(error: error), @store, @gemfile, fast: fast, output: output) do |loader|
         require_relative "../../slib/bundler"
         locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
         open(locked_store)
