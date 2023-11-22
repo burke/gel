@@ -59,21 +59,11 @@ class Gel::GodObject
     end
 
     def initialize
+      @config = nil
       @activated_gems = {}
       @gemfile = nil
       @active_lockfile = false
       @architectures = Stateless.build_architecture_list
-    end
-
-    GEMFILE_PLATFORMS = begin
-      v = RbConfig::CONFIG["ruby_version"].split(".")[0..1].inject(:+)
-
-      # FIXME: This isn't the right condition
-      if defined?(org.jruby.Ruby)
-        ["jruby", "jruby_#{v}", "java", "java_#{v}"]
-      else
-        ["ruby", "ruby_#{v}", "mri", "mri_#{v}"]
-      end
     end
 
     def config
@@ -92,36 +82,9 @@ class Gel::GodObject
       end
     end
 
-    def original_rubylib
-      lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
-      lib.delete File.expand_path("../../slib", __dir__)
-      return nil if lib.empty?
-      lib.join(File::PATH_SEPARATOR)
-    end
-
-    def modified_rubylib
-      lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
-      dir = File.expand_path("../../slib", __dir__)
-      lib.unshift dir unless lib.include?(dir)
-      lib.join(File::PATH_SEPARATOR)
-    end
-
-    def find_gemfile(path = nil, error: true)
-      if path && @gemfile && @gemfile.filename != File.expand_path(path)
-        raise Gel::Error::CannotActivateError.new(path: path, gemfile: @gemfile.filename)
-      end
-      return @gemfile.filename if @gemfile
-
-      path ||= ENV["GEL_GEMFILE"]
-      path ||= Gel::Util.search_upwards("Gemfile")
-      path ||= "Gemfile"
-
-      if File.exist?(path)
-        path
-      elsif error
-        raise Gel::Error::NoGemfile.new(path: path)
-      end
-    end
+    def original_rubylib = Stateless.original_rubylib
+    def modified_rubylib = Stateless.modified_rubylib
+    def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(@gemfile, path, error: error)
 
     def load_gemfile(path = nil, error: true)
       return @gemfile if @gemfile
@@ -133,28 +96,9 @@ class Gel::GodObject
       @gemfile = Gel::GemfileParser.parse(content, path, 1)
     end
 
-    def lockfile_name(gemfile = @gemfile&.filename)
-      ENV["GEL_LOCKFILE"] || (gemfile && gemfile + ".lock") || "Gemfile.lock"
-    end
-
-    def root_store(store = @store)
-      if store.is_a?(Gel::LockedStore)
-        store.inner
-      else
-        store
-      end
-    end
-
-    def write_lock(output: nil, lockfile: lockfile_name, **args)
-      gem_set = solve_for_gemfile(output: output, lockfile: lockfile, **args)
-
-      if lockfile
-        output.puts "Writing lockfile to #{File.expand_path(lockfile)}" if output
-        File.write(lockfile, gem_set.dump)
-      end
-
-      gem_set
-    end
+    def lockfile_name(gemfile = @gemfile&.filename) = Stateless.lockfile_name(gemfile)
+    def root_store(store = @store) = Stateless.root_store(store)
+    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(output: output, lockfile: lockfile, **args)
 
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
       gemfile = Gel::GemfileParser.inline do
@@ -324,24 +268,8 @@ class Gel::GodObject
       nil
     end
 
-    def find_executable(exe, gem_name = nil, gem_version = nil)
-      @store.each(gem_name) do |g|
-        next if gem_version && g.version != gem_version
-        return File.join(g.root, g.bindir, exe) if g.executables.include?(exe)
-      end
-      nil
-    end
-
-    def filtered_gems(gems = @gemfile.gems)
-      platforms = GEMFILE_PLATFORMS.map(&:to_s)
-      gems = gems.reject do |_, _, options|
-        platform_options = Array(options[:platforms]).map(&:to_s)
-
-        next true if platform_options.any? && (platform_options & platforms).empty?
-        next true unless options.fetch(:install_if, true)
-      end
-      gems
-    end
+    def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(@store, exe, gem_name, gem_version)
+    def filtered_gems(gems = @gemfile.gems) = Stateless.filtered_gems(gems)
 
     def find_gem(name, *requirements, &condition)
       requirements = Gel::Support::GemRequirement.new(requirements)
