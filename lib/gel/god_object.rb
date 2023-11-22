@@ -19,10 +19,10 @@ class Gel::GodObject
     def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
     def activated_gems = impl.__activated_gems
     def config = impl.config
-    def filtered_gems(gems = impl.__gemfile.gems) = impl.filtered_gems(gems)
-    def find_executable(exe, gem_name = nil, gem_version = nil) = impl.find_executable(exe, gem_name, gem_version)
+    def filtered_gems(gems = impl.__gemfile.gems) = Stateless.filtered_gems(gems)
+    def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(impl.__store, exe, gem_name, gem_version)
     def find_gem(name, *requirements, &condition) = impl.find_gem(name, *requirements, &condition)
-    def find_gemfile(path = nil, error: true) = impl.find_gemfile(path, error: error)
+    def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
     def gem(name, *requirements, why: nil) = impl.gem(name, *requirements, why: why)
     def gem_for_path(path) = impl.gem_for_path(path)
     def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, impl.__activated_gems, gem_name, path)
@@ -35,7 +35,7 @@ class Gel::GodObject
     def open(store) = impl.open(store)
     def original_rubylib = Stateless.original_rubylib
     def resolve_gem_path(path) = impl.resolve_gem_path(path)
-    def root_store(store = store()) = impl.root_store(store)
+    def root_store(store = store()) = Stateless.root_store(store)
     def scoped_require(gem_name, path) = impl.scoped_require(gem_name, path)
     def store = impl.__store
     def store_set = Stateless.store_set(impl.__architectures)
@@ -77,12 +77,10 @@ class Gel::GodObject
       end
     end
 
-    def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(@gemfile, path, error: error)
-
     def load_gemfile(path = nil, error: true)
       return @gemfile if @gemfile
 
-      path = find_gemfile(path, error: error)
+      path = Stateless.find_gemfile(@gemfile, path, error: error)
       return if path.nil?
 
       content = File.read(path)
@@ -90,7 +88,6 @@ class Gel::GodObject
     end
 
     def lockfile_name(gemfile = @gemfile&.filename) = Stateless.lockfile_name(gemfile)
-    def root_store(store = @store) = Stateless.root_store(store)
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(output: output, lockfile: lockfile, **args)
 
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
@@ -118,7 +115,7 @@ class Gel::GodObject
 
       require_relative "../../slib/bundler"
 
-      locked_store = loader.activate(Gel::GodObject, root_store, install: install, output: output)
+      locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
       open(locked_store)
     end
 
@@ -143,7 +140,7 @@ class Gel::GodObject
           loader = Gel::LockLoader.new(resolved_gem_set, @gemfile)
 
           begin
-            locked_store = loader.activate(self, root_store, install: install, output: output)
+            locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
 
             exes.each do |exe|
               if locked_store.each.any? { |g| g.executables.include?(exe) }
@@ -250,9 +247,6 @@ class Gel::GodObject
 
       nil
     end
-
-    def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(@store, exe, gem_name, gem_version)
-    def filtered_gems(gems = @gemfile.gems) = Stateless.filtered_gems(gems)
 
     def find_gem(name, *requirements, &condition)
       requirements = Gel::Support::GemRequirement.new(requirements)
@@ -381,11 +375,11 @@ class Gel::GodObject
     end
 
     def require_groups(*groups)
-      gems = filtered_gems
+      gems = Stateless.filtered_gems(@gemfile.gems)
       groups = [:default] if groups.empty?
       groups = groups.map(&:to_s)
       gems = gems.reject { |g| ((g[2][:group] || [:default]).map(&:to_s) & groups).empty? }
-      @gemfile.autorequire(self, gems)
+      @gemfile.autorequire(Gel::GodObject, gems)
     end
 
     def solve_for_gemfile(
