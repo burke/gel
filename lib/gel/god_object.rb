@@ -76,20 +76,12 @@ class Gel::GodObject
     end
 
     def gem(name, *requirements, why: nil)
-      Stateless.gem(@store, @activated_gems, name, *requirements, why: why) do |preparation, activation, lib_dirs|
-        @store.prepare(preparation)
-        @activated_gems.update(activation)
-        $LOAD_PATH.concat lib_dirs
-      end
+      Stateless.gem(@store, @activated_gems, name, *requirements, why: why, &method(:activate_gems_now))
     end
 
     def open(store)
       @store = store
-      Stateless.activate_locked_gems(@store) do |preparation, activation, lib_dirs|
-        @store.prepare(preparation)
-        @activated_gems.update(activation)
-        $LOAD_PATH.concat lib_dirs
-      end
+      Stateless.activate_locked_gems(@store, &method(:activate_gems_now))
     end
 
     def load_gemfile(path = nil, error: true)
