@@ -219,13 +219,12 @@ module Gel::GodObject::Stateless
       end
     end
 
-    def activate_for_executable(store, gemfile, exes, install: false, output: nil)
-      loaded_gemfile = nil
+    def activate_for_executable(loaded_gemfile, store, activated_gems, active_gemfile, exes, install: false, output: nil)
       resolved_gem_set = nil
       outdated_gem_set = nil
       load_error = nil
 
-      if loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
+      if loaded_gemfile
         lockfile = lockfile_name(loaded_gemfile.filename)
         if File.exist?(lockfile)
           resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: store.git_depot)
@@ -237,7 +236,7 @@ module Gel::GodObject::Stateless
         end
 
         if resolved_gem_set
-          loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
+          loader = Gel::LockLoader.new(resolved_gem_set, active_gemfile)
 
           begin
             res = yield(loader)
@@ -257,7 +256,7 @@ module Gel::GodObject::Stateless
           []
         end
 
-      gemfile = nil
+      active_gemfile = nil
       exes.each do |exe|
         candidates = store.each.select { |g| g.executables.include?(exe) }
 
@@ -322,17 +321,19 @@ module Gel::GodObject::Stateless
         when 0
           nil
         when 1
-          gem(candidates.first.name)
+          # NOTE: untested
+          gem(store, activated_gems, candidates.first.name)
           return :gem
         else
           # Multiple gems can supply this executable; do we have any
           # useful way of deciding which one should win? One obvious
           # tie-breaker: if a gem's name matches the executable, it wins.
 
+          # NOTE: untested
           if candidates.map(&:name).include?(exe)
-            gem(exe)
+            gem(store, activated_gems, exe)
           else
-            gem(candidates.first.name)
+            gem(store, activated_gems, candidates.first.name)
           end
 
           return :gem
@@ -378,6 +379,7 @@ module Gel::GodObject::Stateless
 
       activate_gems(store, activated_gems, $LOAD_PATH, [gem])
     end
+
     def lock_outdated?(gemfile, resolved_gem_set)
       gemfile_dependencies(gemfile: gemfile) != resolved_gem_set.dependencies
     end

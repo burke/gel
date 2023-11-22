@@ -92,7 +92,8 @@ class Gel::GodObject
     end
 
     def activate_for_executable(exes, install: false, output: nil)
-      Stateless.activate_for_executable(@store, @gemfile, exes, install: install, output: output) do |loader|
+      loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
+      Stateless.activate_for_executable(loaded_gemfile, @store, @activated_gems, @gemfile, exes, install: install, output: output) do |loader|
         locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
 
         ret = nil
