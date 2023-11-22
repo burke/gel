@@ -190,27 +190,6 @@ module Gel::GodObject::Stateless
       path
     end
 
-    def activate_gem(store, activated_gems, gem, why: nil)
-      raise gem.version.class.name unless gem.version.class == String
-      if activated_gems[gem.name]
-        raise activated_gems[gem.name].version.class.name unless activated_gems[gem.name].version.class == String
-        return if activated_gems[gem.name].version == gem.version
-
-        raise Gel::Error::AlreadyActivatedError.new(
-          name: gem.name,
-          existing: activated_gems[gem.name].version,
-          requested: gem.version,
-          why: why,
-        )
-      end
-
-      gem.dependencies.each do |dep, reqs|
-        gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
-      end
-
-      activate_gems(store, activated_gems, $LOAD_PATH, [gem])
-    end
-
     def scoped_require(store, activated_gems, gem_name, path)
       if full_path = gem_has_file?(store, activated_gems, gem_name, path)
         require full_path
@@ -266,10 +245,6 @@ module Gel::GodObject::Stateless
       loader = Gel::LockLoader.new(gem_set)
       locked_store = loader.activate(Gel::GodObject, root_store(store), install: true, output: output)
       Gel::GodObject.open(locked_store)
-    end
-
-    def lock_outdated?(gemfile, resolved_gem_set)
-      gemfile_dependencies(gemfile: gemfile) != resolved_gem_set.dependencies
     end
 
     def load_gemfile(gemfile, path = nil, error: true)
@@ -429,7 +404,32 @@ module Gel::GodObject::Stateless
 
       false
     end
+
     private
+
+    def activate_gem(store, activated_gems, gem, why: nil)
+      raise gem.version.class.name unless gem.version.class == String
+      if activated_gems[gem.name]
+        raise activated_gems[gem.name].version.class.name unless activated_gems[gem.name].version.class == String
+        return if activated_gems[gem.name].version == gem.version
+
+        raise Gel::Error::AlreadyActivatedError.new(
+          name: gem.name,
+          existing: activated_gems[gem.name].version,
+          requested: gem.version,
+          why: why,
+        )
+      end
+
+      gem.dependencies.each do |dep, reqs|
+        gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
+      end
+
+      activate_gems(store, activated_gems, $LOAD_PATH, [gem])
+    end
+    def lock_outdated?(gemfile, resolved_gem_set)
+      gemfile_dependencies(gemfile: gemfile) != resolved_gem_set.dependencies
+    end
 
     def gemfile_dependencies(gemfile:)
       gemfile.gems.
