@@ -96,18 +96,8 @@ class Gel::GodObject
       @config ||= Gel::Config.new
     end
 
-    def locked?
-      @store.is_a?(Gel::LockedStore)
-    end
-
-    def store_set
-      list = []
-      @architectures.each do |arch|
-        list << Gel::MultiStore.subkey(arch, true)
-        list << Gel::MultiStore.subkey(arch, false)
-      end
-      list
-    end
+    def locked? = Stateless.locked?(@store)
+    def store_set = Stateless.store_set(@architectures)
 
     def open(store)
       @store = store
@@ -935,3 +925,5 @@ class Gel::GodObject
     end
   end
 end
+
+require_relative "god_object/stateless"
