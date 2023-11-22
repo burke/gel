@@ -92,7 +92,7 @@ class Gel::Catalog
     uri = URI(uri).dup
     uri.scheme = uri.scheme.downcase
     uri.host = uri.host.downcase
-    if auth = Gel.environment.config[uri.host]
+    if auth = Gel.config[uri.host]
       uri.userinfo = auth
     end
     uri.path = "/" if uri.path == ""

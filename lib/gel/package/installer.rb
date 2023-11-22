@@ -42,7 +42,7 @@ class Gel::Package::Installer
 
       raise "gem already installed" if store.gem?(spec.name, spec.version)
 
-      @config = Gel.environment.config
+      @config = Gel.config
 
       @root = store.gem_root(spec.name, spec.version)
       Gel::Util.rm_rf(@root) if @root && Dir.exist?(@root)

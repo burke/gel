@@ -13,13 +13,8 @@ class Gel::GodObject
     def __store = @store
 
     def initialize
-      @config = nil
       @gemfile = nil
       @active_lockfile = false
-    end
-
-    def config
-      @config ||= Gel::Config.new
     end
 
     def resolve_gem_path(path)

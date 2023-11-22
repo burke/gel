@@ -21,7 +21,6 @@ class Gel::Environment
   # Just accessors for global state bits
   def gemfile = @impl.__gemfile
   def store = @impl.__store
-  def config = @impl.config # Not related to or used by anything else here.
 
   # only used in tests
   def gemfile=(o)

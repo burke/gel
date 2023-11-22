@@ -18,6 +18,10 @@ module Gel
     File.expand_path("..", __dir__)
   end
 
+  def self.config
+    @config ||= Gel::Config.new
+  end
+
   def self.environment
     @environment
   end
