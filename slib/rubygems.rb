@@ -187,7 +187,7 @@ module Gem
       # Extra-special case: this is the bundler binstub, we need to
       # re-exec to hand over.
 
-      ENV["RUBYLIB"] = Gel::GodObject.original_rubylib
+      ENV["RUBYLIB"] = Gel::HostSystem.rubylib_without_gel
       exec RbConfig.ruby, "--", $0, *ARGV
     end
 

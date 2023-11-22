@@ -16,7 +16,7 @@ class Gel::Command::Exec < Gel::Command
       ENV["GEL_LOCKFILE"] = File.expand_path(Gel::GodObject.lockfile_name(gemfile))
     end
 
-    ENV["RUBYLIB"] = Gel::GodObject.modified_rubylib
+    ENV["RUBYLIB"] = Gel::HostSystem.rubylib_with_gel
 
     if execute_inline?(expanded_command)
       if command_source == :path || command_source == :original

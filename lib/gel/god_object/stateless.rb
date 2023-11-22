@@ -4,20 +4,6 @@ module Gel::GodObject::Stateless
   class << self
     def locked?(store) = store.is_a?(Gel::LockedStore)
 
-    def original_rubylib
-      lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
-      lib.delete File.expand_path("../../../slib", __dir__)
-      return nil if lib.empty?
-      lib.join(File::PATH_SEPARATOR)
-    end
-
-    def modified_rubylib
-      lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
-      dir = File.expand_path("../../../slib", __dir__)
-      lib.unshift dir unless lib.include?(dir)
-      lib.join(File::PATH_SEPARATOR)
-    end
-
     def find_executable(store, exe, gem_name = nil, gem_version = nil)
       store.each(gem_name) do |g|
         next if gem_version && g.version != gem_version

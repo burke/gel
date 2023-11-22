@@ -12,11 +12,13 @@ class Gel::GodObject
   class << self
     def impl = Impl.instance
 
+    # Should this be what creates an instance and makes most of the other methods available?
+    def open(store) = impl.open(store)
+
     # Significant mutations
     def activate(fast: false, install: false, output: nil, error: true) = impl.activate(fast: fast, install: install, output: output, error: error)
     def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
-    def open(store) = impl.open(store)
     def gem(name, *requirements, why: nil) = impl.gem(name, *requirements, why: why)
     def resolve_gem_path(path) = impl.resolve_gem_path(path)
 
@@ -24,6 +26,8 @@ class Gel::GodObject
     def gemfile = impl.__gemfile
     def store = impl.__store
     def config = impl.config # Not related to or used by anything else here.
+
+    # only used in tests
     def gemfile=(o)
       impl.__set_gemfile(o)
     end
@@ -38,10 +42,6 @@ class Gel::GodObject
     def locked? = Stateless.locked?(impl.__store)
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.load_gemfile, impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
-
-    # Just utility methods; no relationship to this really. Also could be named better...
-    def modified_rubylib = Stateless.modified_rubylib # rubylib_with_gel
-    def original_rubylib = Stateless.original_rubylib # rubylib_without_gel
 
     # Exclusively used by GemfileParser#autorequire
     def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, Gel::LoadPathManager.activated_gems, gem_name, path)

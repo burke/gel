@@ -38,4 +38,18 @@ module Gel::HostSystem
       list.compact.map(&:freeze).freeze
     end
   end
+
+  def self.rubylib_with_gel
+    lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
+    dir = File.expand_path("../../slib", __dir__)
+    lib.unshift dir unless lib.include?(dir)
+    lib.join(File::PATH_SEPARATOR)
+  end
+
+  def self.rubylib_without_gel
+    lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
+    lib.delete File.expand_path("../../slib", __dir__)
+    return nil if lib.empty?
+    lib.join(File::PATH_SEPARATOR)
+  end
 end

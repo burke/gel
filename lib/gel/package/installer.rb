@@ -128,7 +128,7 @@ class Gel::Package::Installer
       gemfile, lockfile = gemfile_and_lockfile(rake: rake)
 
       {
-        "RUBYLIB" => Gel::GodObject.modified_rubylib,
+        "RUBYLIB" => Gel::HostSystem.rubylib_with_gel,
         "GEL_STORE" => File.expand_path(@root_store.root),
         "GEL_GEMFILE" => gemfile,
         "GEL_LOCKFILE" => lockfile,
