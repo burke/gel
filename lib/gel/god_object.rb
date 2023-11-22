@@ -92,10 +92,6 @@ class Gel::GodObject
       end
     end
 
-    def platform?(platform)
-      platform.nil? || @architectures.include?(platform)
-    end
-
     def config
       @config ||= Gel::Config.new
     end
