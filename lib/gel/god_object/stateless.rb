@@ -1,4 +1,11 @@
+# frozen_string_literal: true
+
+require "rbconfig"
+
+require_relative "../util"
 require_relative "../host_system"
+require_relative "../stdlib"
+require_relative "../support/gem_platform"
 
 module Gel::GodObject::Stateless
   class << self

@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require "rbconfig"
-require_relative "util"
-require_relative "stdlib"
-require_relative "support/gem_platform"
 require_relative "load_path_manager"
 
 class Gel::GodObject
