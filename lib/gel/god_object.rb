@@ -74,7 +74,7 @@ class Gel::GodObject
 
       if @store.respond_to?(:locked_versions) && @store.locked_versions
         gems = @store.gems(@store.locked_versions)
-        activate_gems gems.values
+        Stateless.activate_gems(@store, @activated_gems, $LOAD_PATH, gems.values)
       end
     end
 
@@ -126,7 +126,7 @@ class Gel::GodObject
 
       if file
         if gem && resolved
-          activate_gems resolved
+          Stateless.activate_gems(@store, @activated_gems, $LOAD_PATH, resolved)
         else
           unless resolved
             # This is a cheat: we're assuming the caller is about to require
@@ -163,23 +163,7 @@ class Gel::GodObject
         Stateless.gem(@store, @activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
       end
 
-      activate_gems [gem]
-    end
-
-    def activate_gems(gems)
-      lib_dirs = gems.flat_map(&:require_paths)
-      preparation = {}
-      activation = {}
-
-      gems.each do |g|
-        preparation[g.name] = g.version
-        activation[g.name] = g
-      end
-
-      @store.prepare(preparation)
-
-      @activated_gems.update(activation)
-      $:.concat lib_dirs
+      Stateless.activate_gems(@store, @activated_gems, $LOAD_PATH, [gem])
     end
 
     def git_depot

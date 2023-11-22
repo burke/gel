@@ -756,5 +756,21 @@ module Gel::GodObject::Stateless
 
       nil
     end
+
+    def activate_gems(store, activated_gems, load_path, gems)
+      lib_dirs = gems.flat_map(&:require_paths)
+      preparation = {}
+      activation = {}
+
+      gems.each do |g|
+        preparation[g.name] = g.version
+        activation[g.name] = g
+      end
+
+      store.prepare(preparation)
+
+      activated_gems.update(activation)
+      load_path.concat lib_dirs
+    end
   end
 end
