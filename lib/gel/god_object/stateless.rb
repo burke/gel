@@ -72,7 +72,7 @@ module Gel::GodObject::Stateless
 
       lockfile = lockfile_name(loaded.filename)
       if File.exist?(lockfile)
-        resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
+        resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: store.git_depot)
         resolved_gem_set = nil if !fast && lock_outdated?(loaded, resolved_gem_set)
       end
 
@@ -231,7 +231,7 @@ module Gel::GodObject::Stateless
       if loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
         lockfile = lockfile_name(loaded_gemfile.filename)
         if File.exist?(lockfile)
-          resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
+          resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: store.git_depot)
 
           if lock_outdated?(loaded_gemfile, resolved_gem_set)
             outdated_gem_set = resolved_gem_set
@@ -416,7 +416,7 @@ module Gel::GodObject::Stateless
 
       if lockfile && File.exist?(lockfile)
         require_relative "../resolved_gem_set"
-        gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
+        gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: store.git_depot)
         target_platforms |= gem_set.platforms if gem_set.platforms
 
         strategy = preference_strategy&.call(gem_set)
@@ -475,7 +475,7 @@ module Gel::GodObject::Stateless
       end
 
       git_catalogs = git_sources.map do |remote, ref_type, ref|
-        git_depot = Gel::GodObject.impl.git_depot
+        git_depot = store.git_depot
         previous_git_catalogs[[remote, ref_type, ref]] || Gel::GitCatalog.new(git_depot, remote, ref_type, ref)
       end
 

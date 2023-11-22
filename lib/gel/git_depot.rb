@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "vendor/ruby_digest"
-
 class Gel::GitDepot
   attr_reader :mirror_root
 
@@ -118,6 +116,8 @@ class Gel::GitDepot
   end
 
   def ident(remote)
+    require_relative "vendor/ruby_digest"
+
     short = File.basename(remote, ".git")
     digest = Gel::Vendor::RubyDigest::SHA256.hexdigest(remote)[0..12]
     "#{short}-#{digest}"

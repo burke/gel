@@ -12,6 +12,13 @@ class Gel::LockedStore
     @full_cache = false
   end
 
+  def git_depot
+    @git_depot ||= begin
+      require_relative "git_depot"
+      Gel::GitDepot.new(self)
+    end
+  end
+
   def stub_set
     @inner.stub_set
   end

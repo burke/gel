@@ -66,11 +66,6 @@ class Gel::GodObject
       @config ||= Gel::Config.new
     end
 
-    def git_depot
-      require_relative "git_depot"
-      @git_depot ||= Gel::GitDepot.new(@store)
-    end
-
     def open(store)
       @store = store
       Stateless.activate_locked_gems(@store, @activated_gems, $LOAD_PATH)

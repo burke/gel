@@ -25,6 +25,13 @@ class Gel::MultiStore
     @monitor = Monitor.new
   end
 
+  def git_depot
+    @git_depot ||= begin
+      require_relative "git_depot"
+      Gel::GitDepot.new(self)
+    end
+  end
+
   def stub_set
     @stub_set ||= Gel::StubSet.new(@root)
   end
