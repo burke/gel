@@ -16,7 +16,7 @@ class Gel::GodObject
     end
 
     def activate(fast: false, install: false, output: nil, error: true) = impl.activate(fast: fast, install: install, output: output, error: error)
-    def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
+    def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(impl.__store, impl.__gemfile, exes, install: install, output: output)
     def activated_gems = impl.__activated_gems
     def config = impl.config
     def filtered_gems(gems = impl.__gemfile.gems) = Stateless.filtered_gems(gems)
@@ -27,10 +27,10 @@ class Gel::GodObject
     def gem_for_path(path) = impl.gem_for_path(path)
     def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, impl.__activated_gems, gem_name, path)
     def gemfile = impl.__gemfile
-    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
+    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = Stateless.install_gem(impl.__architectures, impl.__store, catalogs, gem_name, requirements, output: output, solve: solve)
     def load_gemfile(path = nil, error: true) = impl.load_gemfile(path, error: error)
     def locked? = Stateless.locked?(impl.__store)
-    def lockfile_name(gemfile = self.gemfile&.filename) = impl.lockfile_name(gemfile)
+    def lockfile_name(gemfile = self.gemfile&.filename) = Stateless.lockfile_name(gemfile)
     def modified_rubylib = Stateless.modified_rubylib
     def open(store) = impl.open(store)
     def original_rubylib = Stateless.original_rubylib
@@ -39,7 +39,7 @@ class Gel::GodObject
     def scoped_require(gem_name, path) = impl.scoped_require(gem_name, path)
     def store = impl.__store
     def store_set = Stateless.store_set(impl.__architectures)
-    def write_lock(output: nil, lockfile: lockfile_name, **args) = impl.write_lock(output: output, lockfile: lockfile, **args)
+    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(output: output, lockfile: lockfile, **args)
   end
 
   class Impl
@@ -87,13 +87,6 @@ class Gel::GodObject
       @gemfile = Gel::GemfileParser.parse(content, path, 1)
     end
 
-    def lockfile_name(gemfile = @gemfile&.filename) = Stateless.lockfile_name(gemfile)
-    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(output: output, lockfile: lockfile, **args)
-
-    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
-      Stateless.install_gem(@architectures, @store, catalogs, gem_name, requirements, output: output, solve: solve)
-    end
-
     def activate(fast: false, install: false, output: nil, error: true)
       loaded = Gel::GodObject.load_gemfile(error: error)
       return if loaded.nil?
@@ -108,7 +101,7 @@ class Gel::GodObject
 
       return if fast && !resolved_gem_set
 
-      resolved_gem_set ||= write_lock(output: output, lockfile: lockfile)
+      resolved_gem_set ||= Stateless.write_lock(output: output, lockfile: lockfile)
 
       @active_lockfile = true
       loader = Gel::LockLoader.new(resolved_gem_set, @gemfile)
@@ -119,7 +112,7 @@ class Gel::GodObject
       open(locked_store)
     end
 
-    def activate_for_executable(exes, install: false, output: nil)
+    def activate_for_executable(store, gemfile, exes, install: false, output: nil)
       loaded_gemfile = nil
       resolved_gem_set = nil
       outdated_gem_set = nil
