@@ -38,11 +38,8 @@ class Gel::GodObject
     def root_store(store = store()) = impl.root_store(store)
     def scoped_require(gem_name, path) = impl.scoped_require(gem_name, path)
     def store = impl.__store
-    def store_set = impl.store_set
+    def store_set = Stateless.store_set(impl.__architectures)
     def write_lock(output: nil, lockfile: lockfile_name, **args) = impl.write_lock(output: output, lockfile: lockfile, **args)
-  end
-
-  module Stateless
   end
 
   class Impl
@@ -52,6 +49,7 @@ class Gel::GodObject
     def __gemfile = @gemfile
     def __store = @store
     def __activated_gems = @activated_gems
+    def __architectures = @architectures
 
     private_class_method :new
     def self.instance
@@ -69,8 +67,6 @@ class Gel::GodObject
     def config
       @config ||= Gel::Config.new
     end
-
-    def store_set = Stateless.store_set(@architectures)
 
     def open(store)
       @store = store
