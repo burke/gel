@@ -16,7 +16,7 @@ class Gel::GodObject
     end
 
     def activate(fast: false, install: false, output: nil, error: true) = impl.activate(fast: fast, install: install, output: output, error: error)
-    def activate_for_executable(exes, install: false, output: nil) = Stateless.activate_for_executable(impl.__store, impl.__gemfile, exes, install: install, output: output)
+    def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
     def activated_gems = impl.__activated_gems
     def config = impl.config
     def filtered_gems(gems = impl.__gemfile.gems) = Stateless.filtered_gems(gems)
@@ -82,6 +82,22 @@ class Gel::GodObject
         open(locked_store)
       end
       nil
+    end
+
+    def activate_for_executable(exes, install: false, output: nil)
+      Stateless.activate_for_executable(@store, @gemfile, exes, install: install, output: output) do |loader|
+        locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
+
+        ret = nil
+        exes.each do |exe|
+          if locked_store.each.any? { |g| g.executables.include?(exe) }
+            open(locked_store)
+            ret = :lock
+            break
+          end
+        end
+        ret
+      end
     end
   end
 end

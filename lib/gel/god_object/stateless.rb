@@ -243,14 +243,8 @@ module Gel::GodObject::Stateless
           loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
 
           begin
-            locked_store = loader.activate(Gel::GodObject, root_store(store), install: install, output: output)
-
-            exes.each do |exe|
-              if locked_store.each.any? { |g| g.executables.include?(exe) }
-                Gel::GodObject.open(locked_store)
-                return :lock
-              end
-            end
+            res = yield(loader)
+            return res if res
           rescue Gel::Error::MissingGemError => ex
             load_error = ex
           end
