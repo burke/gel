@@ -9,61 +9,70 @@ class Gel::GodObject
   IGNORE_LIST = %w(bundler gel rubygems-update)
 
   class << self
+    def impl = Impl.instance
+
     def gemfile=(o)
-      Impl.gemfile = o
+      impl.gemfile = o
     end
 
-    def activate(fast: false, install: false, output: nil, error: true) = Impl.activate(fast: fast, install: install, output: output, error: error)
-    def activate_for_executable(exes, install: false, output: nil) = Impl.activate_for_executable(exes, install: install, output: output)
-    def activated_gems = Impl.activated_gems
-    def config = Impl.config
-    def filtered_gems(gems = Impl.gemfile.gems) = Impl.filtered_gems(gems)
-    def find_executable(exe, gem_name = nil, gem_version = nil) = Impl.find_executable(exe, gem_name, gem_version)
-    def find_gem(name, *requirements, &condition) = Impl.find_gem(name, *requirements, &condition)
-    def find_gemfile(path = nil, error: true) = Impl.find_gemfile(path, error: error)
-    def gem(name, *requirements, why: nil) = Impl.gem(name, *requirements, why: why)
-    def gem_for_path(path) = Impl.gem_for_path(path)
-    def gem_has_file?(gem_name, path) = Impl.gem_has_file?(gem_name, path)
-    def gemfile = Impl.gemfile
-    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = Impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
-    def load_gemfile(path = nil, error: true) = Impl.load_gemfile(path, error: error)
-    def locked? = Impl.locked?
-    def lockfile_name(gemfile = self.gemfile&.filename) = Impl.lockfile_name(gemfile)
-    def modified_rubylib = Impl.modified_rubylib
-    def open(store) = Impl.open(store)
-    def original_rubylib = Impl.original_rubylib
-    def resolve_gem_path(path) = Impl.resolve_gem_path(path)
-    def root_store(store = store()) = Impl.root_store(store)
-    def scoped_require(gem_name, path) = Impl.scoped_require(gem_name, path)
-    def store = Impl.store
-    def store_set = Impl.store_set
-    def write_lock(output: nil, lockfile: lockfile_name, **args) = Impl.write_lock(output: output, lockfile: lockfile, **args)
+    def activate(fast: false, install: false, output: nil, error: true) = impl.activate(fast: fast, install: install, output: output, error: error)
+    def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
+    def activated_gems = impl.activated_gems
+    def config = impl.config
+    def filtered_gems(gems = impl.gemfile.gems) = impl.filtered_gems(gems)
+    def find_executable(exe, gem_name = nil, gem_version = nil) = impl.find_executable(exe, gem_name, gem_version)
+    def find_gem(name, *requirements, &condition) = impl.find_gem(name, *requirements, &condition)
+    def find_gemfile(path = nil, error: true) = impl.find_gemfile(path, error: error)
+    def gem(name, *requirements, why: nil) = impl.gem(name, *requirements, why: why)
+    def gem_for_path(path) = impl.gem_for_path(path)
+    def gem_has_file?(gem_name, path) = impl.gem_has_file?(gem_name, path)
+    def gemfile = impl.gemfile
+    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
+    def load_gemfile(path = nil, error: true) = impl.load_gemfile(path, error: error)
+    def locked? = impl.locked?
+    def lockfile_name(gemfile = self.gemfile&.filename) = impl.lockfile_name(gemfile)
+    def modified_rubylib = impl.modified_rubylib
+    def open(store) = impl.open(store)
+    def original_rubylib = impl.original_rubylib
+    def resolve_gem_path(path) = impl.resolve_gem_path(path)
+    def root_store(store = store()) = impl.root_store(store)
+    def scoped_require(gem_name, path) = impl.scoped_require(gem_name, path)
+    def store = impl.store
+    def store_set = impl.store_set
+    def write_lock(output: nil, lockfile: lockfile_name, **args) = impl.write_lock(output: output, lockfile: lockfile, **args)
   end
 
   class Impl
-    class << self
-      attr_reader :store
-      attr_accessor :gemfile
-      attr_reader :architectures
+    attr_reader :store
+    attr_accessor :gemfile
+    attr_reader :architectures
+
+    private_class_method :new
+    def self.instance
+      @instance ||= new
     end
-    self.gemfile = nil
-    @active_lockfile = false
-    @architectures =
-      begin
-        local = Gel::Support::GemPlatform.local
 
-        list = []
-        if local.cpu == "universal" && RUBY_PLATFORM =~ /^universal\.([^-]+)/
-          list << "#$1-#{local.os}"
-        end
-        list << "#{local.cpu}-#{local.os}"
-        list << "universal-#{local.os}" unless local.cpu == "universal"
-        list = list.map { |arch| "#{arch}-#{local.version}" } + list if local.version
-        list << "java" if defined?(org.jruby.Ruby)
-        list << "ruby"
+    def initialize
+      self.gemfile = nil
+      @active_lockfile = false
 
-        list
-      end.compact.map(&:freeze).freeze
+      @architectures =
+        begin
+          local = Gel::Support::GemPlatform.local
+
+          list = []
+          if local.cpu == "universal" && RUBY_PLATFORM =~ /^universal\.([^-]+)/
+            list << "#$1-#{local.os}"
+          end
+          list << "#{local.cpu}-#{local.os}"
+          list << "universal-#{local.os}" unless local.cpu == "universal"
+          list = list.map { |arch| "#{arch}-#{local.version}" } + list if local.version
+          list << "java" if defined?(org.jruby.Ruby)
+          list << "ruby"
+
+          list
+        end.compact.map(&:freeze).freeze
+    end
 
     GEMFILE_PLATFORMS = begin
       v = RbConfig::CONFIG["ruby_version"].split(".")[0..1].inject(:+)
@@ -76,19 +85,19 @@ class Gel::GodObject
       end
     end
 
-    def self.platform?(platform)
+    def platform?(platform)
       platform.nil? || architectures.include?(platform)
     end
 
-    def self.config
+    def config
       @config ||= Gel::Config.new
     end
 
-    def self.locked?
+    def locked?
       @store.is_a?(Gel::LockedStore)
     end
 
-    def self.store_set
+    def store_set
       list = []
       architectures.each do |arch|
         list << Gel::MultiStore.subkey(arch, true)
@@ -97,11 +106,11 @@ class Gel::GodObject
       list
     end
 
-    def self.activated_gems
+    def activated_gems
       @activated ||= {}
     end
 
-    def self.open(store)
+    def open(store)
       @store = store
 
       if store.respond_to?(:locked_versions) && store.locked_versions
@@ -110,21 +119,21 @@ class Gel::GodObject
       end
     end
 
-    def self.original_rubylib
+    def original_rubylib
       lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
       lib.delete File.expand_path("../../slib", __dir__)
       return nil if lib.empty?
       lib.join(File::PATH_SEPARATOR)
     end
 
-    def self.modified_rubylib
+    def modified_rubylib
       lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
       dir = File.expand_path("../../slib", __dir__)
       lib.unshift dir unless lib.include?(dir)
       lib.join(File::PATH_SEPARATOR)
     end
 
-    def self.find_gemfile(path = nil, error: true)
+    def find_gemfile(path = nil, error: true)
       if path && @gemfile && @gemfile.filename != File.expand_path(path)
         raise Gel::Error::CannotActivateError.new(path: path, gemfile: @gemfile.filename)
       end
@@ -141,7 +150,7 @@ class Gel::GodObject
       end
     end
 
-    def self.load_gemfile(path = nil, error: true)
+    def load_gemfile(path = nil, error: true)
       return @gemfile if @gemfile
 
       path = find_gemfile(path, error: error)
@@ -151,11 +160,11 @@ class Gel::GodObject
       @gemfile = Gel::GemfileParser.parse(content, path, 1)
     end
 
-    def self.lockfile_name(gemfile = self.gemfile&.filename)
+    def lockfile_name(gemfile = self.gemfile&.filename)
       ENV["GEL_LOCKFILE"] || (gemfile && gemfile + ".lock") || "Gemfile.lock"
     end
 
-    def self.with_store(store)
+    def with_store(store)
       # Work around the fact Gel::GodObject is a singleton: we really
       # want to treat the environment we're running in separately from the
       # application's environment we're working on. But for now, we can
@@ -171,7 +180,7 @@ class Gel::GodObject
       @store = original_store
     end
 
-    def self.root_store(store = store())
+    def root_store(store = store())
       if store.is_a?(Gel::LockedStore)
         store.inner
       else
@@ -179,16 +188,16 @@ class Gel::GodObject
       end
     end
 
-    def self.with_root_store(&block)
+    def with_root_store(&block)
       with_store(root_store, &block)
     end
 
-    def self.git_depot
+    def git_depot
       require_relative "git_depot"
       @git_depot ||= Gel::GitDepot.new(store)
     end
 
-    def self.solve_for_gemfile(store: store(), output: nil, gemfile: Gel::GodObject.load_gemfile, lockfile: Gel::GodObject.lockfile_name, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
+    def solve_for_gemfile(store: store(), output: nil, gemfile: Gel::GodObject.load_gemfile, lockfile: Gel::GodObject.lockfile_name, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
       output = nil if $DEBUG
 
       target_platforms = Array(platforms)
@@ -404,7 +413,7 @@ class Gel::GodObject
       new_resolution
     end
 
-    def self.gemfile_dependencies(gemfile:)
+    def gemfile_dependencies(gemfile:)
       gemfile.gems.
         group_by { |name, _constraints, _options| name }.
         map do |name, list|
@@ -422,7 +431,7 @@ class Gel::GodObject
       end.sort
     end
 
-    def self.write_lock(output: nil, lockfile: lockfile_name, **args)
+    def write_lock(output: nil, lockfile: lockfile_name, **args)
       gem_set = solve_for_gemfile(output: output, lockfile: lockfile, **args)
 
       if lockfile
@@ -433,7 +442,7 @@ class Gel::GodObject
       gem_set
     end
 
-    def self.install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
+    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
       gemfile = Gel::GemfileParser.inline do
         source "https://rubygems.org"
 
@@ -447,7 +456,7 @@ class Gel::GodObject
       open(locked_store)
     end
 
-    def self.activate(fast: false, install: false, output: nil, error: true)
+    def activate(fast: false, install: false, output: nil, error: true)
       loaded = Gel::GodObject.load_gemfile(error: error)
       return if loaded.nil?
       return if @active_lockfile
@@ -472,11 +481,11 @@ class Gel::GodObject
       open(locked_store)
     end
 
-    def self.lock_outdated?(gemfile, resolved_gem_set)
+    def lock_outdated?(gemfile, resolved_gem_set)
       gemfile_dependencies(gemfile: gemfile) != resolved_gem_set.dependencies
     end
 
-    def self.activate_for_executable(exes, install: false, output: nil)
+    def activate_for_executable(exes, install: false, output: nil)
       loaded_gemfile = nil
       resolved_gem_set = nil
       outdated_gem_set = nil
@@ -605,7 +614,7 @@ class Gel::GodObject
       nil
     end
 
-    def self.find_executable(exe, gem_name = nil, gem_version = nil)
+    def find_executable(exe, gem_name = nil, gem_version = nil)
       @store.each(gem_name) do |g|
         next if gem_version && g.version != gem_version
         return File.join(g.root, g.bindir, exe) if g.executables.include?(exe)
@@ -613,7 +622,7 @@ class Gel::GodObject
       nil
     end
 
-    def self.filtered_gems(gems = self.gemfile.gems)
+    def filtered_gems(gems = self.gemfile.gems)
       platforms = GEMFILE_PLATFORMS.map(&:to_s)
       gems = gems.reject do |_, _, options|
         platform_options = Array(options[:platforms]).map(&:to_s)
@@ -624,7 +633,7 @@ class Gel::GodObject
       gems
     end
 
-    def self.require_groups(*groups)
+    def require_groups(*groups)
       gems = filtered_gems
       groups = [:default] if groups.empty?
       groups = groups.map(&:to_s)
@@ -632,7 +641,7 @@ class Gel::GodObject
       @gemfile.autorequire(self, gems)
     end
 
-    def self.find_gem(name, *requirements, &condition)
+    def find_gem(name, *requirements, &condition)
       requirements = Gel::Support::GemRequirement.new(requirements)
 
       @store.each(name).find do |g|
@@ -640,7 +649,7 @@ class Gel::GodObject
       end
     end
 
-    def self.gem(name, *requirements, why: nil)
+    def gem(name, *requirements, why: nil)
       return if IGNORE_LIST.include?(name)
 
       requirements = Gel::Support::GemRequirement.new(requirements)
@@ -677,7 +686,7 @@ class Gel::GodObject
       end
     end
 
-    def self.activate_gem(gem, why: nil)
+    def activate_gem(gem, why: nil)
       raise gem.version.class.name unless gem.version.class == String
       if activated_gems[gem.name]
         raise activated_gems[gem.name].version.class.name unless activated_gems[gem.name].version.class == String
@@ -698,7 +707,7 @@ class Gel::GodObject
       activate_gems [gem]
     end
 
-    def self.activate_gems(gems)
+    def activate_gems(gems)
       lib_dirs = gems.flat_map(&:require_paths)
       preparation = {}
       activation = {}
@@ -723,7 +732,7 @@ class Gel::GodObject
     # Recurses using internal +context+ as a hash of additional gems to
     # consider already activated. This is used to identify internal conflicts
     # between pending dependencies.
-    def self.gems_for_activation(gem, why: nil, context: {})
+    def gems_for_activation(gem, why: nil, context: {})
       if active_gem = activated_gems[gem.name] || context[gem.name]
         # This gem name is already active. Either it's the right version, and
         # we have nothing to do, or it's the wrong version, and we're unable
@@ -807,7 +816,7 @@ class Gel::GodObject
       new_gems
     end
 
-    def self.gem_has_file?(gem_name, path)
+    def gem_has_file?(gem_name, path)
       search_name, search_ext = Gel::Util.split_filename_for_require(path)
 
       @store.gems_for_lib(search_name) do |gem, subdir, ext|
@@ -821,7 +830,7 @@ class Gel::GodObject
       false
     end
 
-    def self.scoped_require(gem_name, path)
+    def scoped_require(gem_name, path)
       if full_path = gem_has_file?(gem_name, path)
         require full_path
       else
@@ -842,7 +851,7 @@ class Gel::GodObject
     #               # if stdlib: boolean whether the file is known to already
     #               # be loaded (may return false negative)
     # ]
-    def self.scan_for_path(path)
+    def scan_for_path(path)
       if @store && !path.start_with?("/")
         search_name, search_ext = Gel::Util.split_filename_for_require(path)
 
@@ -914,12 +923,12 @@ class Gel::GodObject
       end
     end
 
-    def self.gem_for_path(path)
+    def gem_for_path(path)
       gem, _file, _resolved = scan_for_path(path)
       gem
     end
 
-    def self.resolve_gem_path(path)
+    def resolve_gem_path(path)
       path = path.to_s # might be e.g. a Pathname
 
       gem, file, resolved = scan_for_path(path)
