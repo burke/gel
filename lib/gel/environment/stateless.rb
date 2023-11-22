@@ -7,6 +7,9 @@ require_relative "../host_system"
 require_relative "../stdlib"
 require_relative "../support/gem_platform"
 
+# This module contains a bunch of behaviour for Gel.environment.
+# Some of it is pretty thorny and could use a reafactor, but what is here
+# notably doesn't mutate any state on the Gel.environment except through callbacks.
 module Gel::Environment::Stateless
   class << self
     def locked?(store) = store.is_a?(Gel::LockedStore)
@@ -138,7 +141,7 @@ module Gel::Environment::Stateless
 
     def scoped_require(store, activated_gems, gem_name, path)
       if full_path = gem_has_file?(store, activated_gems, gem_name, path)
-        require full_path
+        yield full_path
       else
         raise ::LoadError, "No file #{path.inspect} found in gem #{gem_name.inspect}"
       end
@@ -158,7 +161,7 @@ module Gel::Environment::Stateless
       groups = [:default] if groups.empty?
       groups = groups.map(&:to_s)
       gems = gems.reject { |g| ((g[2][:group] || [:default]).map(&:to_s) & groups).empty? }
-      gemfile.autorequire(Gel.environment, gems)
+      yield gems
     end
 
     def write_lock(gemfile, store, output: nil, lockfile: lockfile_name, **args)
@@ -797,5 +800,3 @@ module Gel::Environment::Stateless
     end
   end
 end
-
-

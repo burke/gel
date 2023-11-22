@@ -34,10 +34,20 @@ class Gel::Environment
   # gem_has_file? and scoped_require exclusively used by GemfileParser#autorequire
   def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(@store, Gel::LoadPathManager.activated_gems, gem_name, path)
   # requires are obviously side effects.. how can we flag these clearly?
-  def scoped_require(gem_name, path) = Stateless.scoped_require(@store, Gel::LoadPathManager.activated_gems, gem_name, path)
-  def require_groups(*groups) = Stateless.require_groups(@gemfile, *groups)
 
   # Significant mutations below
+
+  def scoped_require(gem_name, path)
+    Stateless.scoped_require(@store, Gel::LoadPathManager.activated_gems, gem_name, path) do |full_path|
+      require full_path
+    end
+  end
+
+  def require_groups(*groups)
+    Stateless.require_groups(@gemfile, *groups) do |gems|
+      @gemfile.autorequire(self, gems)
+    end
+  end
 
   def gem(name, *requirements, why: nil)
     Stateless.gem(@store, Gel::LoadPathManager.activated_gems, name, *requirements, why: why, &method(:activate_gems_now))
@@ -46,7 +56,7 @@ class Gel::Environment
   def activate(fast: false, install: false, output: nil, error: true)
     @active_lockfile ||= Stateless.activate(@active_lockfile, load_gemfile(error: error), @store, @gemfile, fast: fast, output: output) do |loader|
       require_relative "../../slib/bundler"
-      locked_store = loader.activate(Gel.environment, @store.root_store, install: install, output: output)
+      locked_store = loader.activate(self, @store.root_store, install: install, output: output)
       Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
     end
     nil
@@ -54,7 +64,7 @@ class Gel::Environment
 
   def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
     Stateless.install_gem(@store, catalogs, gem_name, requirements, output: output, solve: solve) do |loader|
-      locked_store = loader.activate(Gel.environment, @store.root_store, install: true, output: output)
+      locked_store = loader.activate(self, @store.root_store, install: true, output: output)
       Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
     end
   end
@@ -66,7 +76,7 @@ class Gel::Environment
   def activate_for_executable(exes, install: false, output: nil)
     loaded_gemfile = load_gemfile(error: false)
     Stateless.activate_for_executable(loaded_gemfile, @store, Gel::LoadPathManager.activated_gems, @gemfile, exes, install: install, output: output, activate_gems_now: method(:activate_gems_now)) do |loader|
-      locked_store = loader.activate(Gel.environment, @store.root_store, install: install, output: output)
+      locked_store = loader.activate(self, @store.root_store, install: install, output: output)
 
       ret = nil
       exes.each do |exe|
