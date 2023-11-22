@@ -23,7 +23,7 @@ class Gel::GodObject
     def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(impl.__store, exe, gem_name, gem_version)
     def find_gem(name, *requirements, &condition) = Stateless.find_gem(impl.__store, name, *requirements, &condition)
     def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
-    def gem(name, *requirements, why: nil) = impl.gem(impl.__store, impl.__activated_gems, name, *requirements, why: why)
+    def gem(name, *requirements, why: nil) = Stateless.gem(impl.__store, impl.__activated_gems, name, *requirements, why: why)
     def gem_for_path(path) = impl.gem_for_path(path)
     def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, impl.__activated_gems, gem_name, path)
     def gemfile = impl.__gemfile
@@ -113,42 +113,6 @@ class Gel::GodObject
       open(locked_store)
     end
 
-    def gem(store, activated_gems, name, *requirements, why: nil)
-      return if IGNORE_LIST.include?(name)
-
-      requirements = Gel::Support::GemRequirement.new(requirements)
-
-      if existing = activated_gems[name]
-        if existing.satisfies?(requirements)
-          return
-        else
-          raise Gel::Error::AlreadyActivatedError.new(
-            name: name,
-            existing: existing.version,
-            requirements: requirements,
-            why: why,
-          )
-        end
-      end
-
-      found_any = false
-      gem = store.each(name).find do |g|
-        found_any = true
-        g.satisfies?(requirements)
-      end
-
-      if gem
-        Gel::GodObject.impl.send(:activate_gem, gem, why: why)
-      else
-        raise Gel::Error::UnsatisfiedDependencyError.new(
-          name: name,
-          was_locked: Stateless.locked?(store),
-          found_any: found_any,
-          requirements: requirements,
-          why: why,
-        )
-      end
-    end
 
     def gem_for_path(path)
       gem, _file, _resolved = Stateless.scan_for_path(@store, @activated_gems, path)
@@ -196,7 +160,7 @@ class Gel::GodObject
       end
 
       gem.dependencies.each do |dep, reqs|
-        self.gem(@store, @activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
+        Stateless.gem(@store, @activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
       end
 
       activate_gems [gem]

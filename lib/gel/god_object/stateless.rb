@@ -103,6 +103,43 @@ module Gel::GodObject::Stateless
       end
     end
 
+    def gem(store, activated_gems, name, *requirements, why: nil)
+      return if Gel::GodObject::IGNORE_LIST.include?(name)
+
+      requirements = Gel::Support::GemRequirement.new(requirements)
+
+      if existing = activated_gems[name]
+        if existing.satisfies?(requirements)
+          return
+        else
+          raise Gel::Error::AlreadyActivatedError.new(
+            name: name,
+            existing: existing.version,
+            requirements: requirements,
+            why: why,
+          )
+        end
+      end
+
+      found_any = false
+      gem = store.each(name).find do |g|
+        found_any = true
+        g.satisfies?(requirements)
+      end
+
+      if gem
+        Gel::GodObject.impl.send(:activate_gem, gem, why: why)
+      else
+        raise Gel::Error::UnsatisfiedDependencyError.new(
+          name: name,
+          was_locked: locked?(store),
+          found_any: found_any,
+          requirements: requirements,
+          why: why,
+        )
+      end
+    end
+
     def scoped_require(store, activated_gems, gem_name, path)
       if full_path = gem_has_file?(store, activated_gems, gem_name, path)
         require full_path
