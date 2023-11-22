@@ -35,7 +35,6 @@ require_relative "gel/support/gem_version"
 require_relative "gel/support/gem_requirement"
 
 require_relative "gel/config"
-require_relative "gel/god_object"
 require_relative "gel/environment"
 require_relative "gel/store"
 require_relative "gel/store_gem"

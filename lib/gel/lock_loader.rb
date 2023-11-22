@@ -49,7 +49,7 @@ class Gel::LockLoader
       next if processed_gems[name]
       processed_gems[name] = true
 
-      next if Gel::GodObject::IGNORE_LIST.include?(name)
+      next if Gel::Environment::IGNORE_LIST.include?(name)
 
       next unless all_versions = all_gems[name]
 

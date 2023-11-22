@@ -7,7 +7,7 @@ require_relative "../host_system"
 require_relative "../stdlib"
 require_relative "../support/gem_platform"
 
-module Gel::GodObject::Stateless
+module Gel::Environment::Stateless
   class << self
     def locked?(store) = store.is_a?(Gel::LockedStore)
 
@@ -71,7 +71,7 @@ module Gel::GodObject::Stateless
     end
 
     def gem(store, activated_gems, name, *requirements, why: nil, &block)
-      return if Gel::GodObject::IGNORE_LIST.include?(name)
+      return if Gel::Environment::IGNORE_LIST.include?(name)
 
       requirements = Gel::Support::GemRequirement.new(requirements)
 
@@ -158,7 +158,7 @@ module Gel::GodObject::Stateless
       groups = [:default] if groups.empty?
       groups = groups.map(&:to_s)
       gems = gems.reject { |g| ((g[2][:group] || [:default]).map(&:to_s) & groups).empty? }
-      gemfile.autorequire(Gel::GodObject, gems)
+      gemfile.autorequire(Gel.environment, gems)
     end
 
     def write_lock(gemfile, store, output: nil, lockfile: lockfile_name, **args)
@@ -721,7 +721,7 @@ module Gel::GodObject::Stateless
       context[gem.name] = gem
 
       gem.dependencies.each do |dep, reqs|
-        next if Gel::GodObject::IGNORE_LIST.include?(dep)
+        next if Gel::Environment::IGNORE_LIST.include?(dep)
 
         inner_why = ["required by #{gem.name} #{gem.version}", *why]
 
