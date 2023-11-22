@@ -1,17 +1,6 @@
-require "rbconfig"
+require_relative "../host_system"
 
 module Gel::GodObject::Stateless
-  GEMFILE_PLATFORMS = begin
-    v = RbConfig::CONFIG["ruby_version"].split(".")[0..1].inject(:+)
-
-    # FIXME: This isn't the right condition
-    if defined?(org.jruby.Ruby)
-      ["jruby", "jruby_#{v}", "java", "java_#{v}"]
-    else
-      ["ruby", "ruby_#{v}", "mri", "mri_#{v}"]
-    end
-  end
-
   class << self
     def locked?(store) = store.is_a?(Gel::LockedStore)
 
@@ -63,7 +52,7 @@ module Gel::GodObject::Stateless
     end
 
     def filtered_gems(gems)
-      platforms = GEMFILE_PLATFORMS.map(&:to_s)
+      platforms = Gel::HostSystem::GEMFILE_PLATFORMS.map(&:to_s)
       gems.reject do |_, _, options|
         platform_options = Array(options[:platforms]).map(&:to_s)
 
