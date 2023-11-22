@@ -128,7 +128,7 @@ module Gel::GodObject::Stateless
       end
 
       if gem
-        Gel::GodObject.impl.send(:activate_gem, gem, why: why)
+        activate_gem(store, activated_gems, gem, why: why)
       else
         raise Gel::Error::UnsatisfiedDependencyError.new(
           name: name,
@@ -138,6 +138,27 @@ module Gel::GodObject::Stateless
           why: why,
         )
       end
+    end
+
+    def activate_gem(store, activated_gems, gem, why: nil)
+      raise gem.version.class.name unless gem.version.class == String
+      if activated_gems[gem.name]
+        raise activated_gems[gem.name].version.class.name unless activated_gems[gem.name].version.class == String
+        return if activated_gems[gem.name].version == gem.version
+
+        raise Gel::Error::AlreadyActivatedError.new(
+          name: gem.name,
+          existing: activated_gems[gem.name].version,
+          requested: gem.version,
+          why: why,
+        )
+      end
+
+      gem.dependencies.each do |dep, reqs|
+        gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
+      end
+
+      activate_gems(store, activated_gems, $LOAD_PATH, [gem])
     end
 
     def scoped_require(store, activated_gems, gem_name, path)

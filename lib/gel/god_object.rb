@@ -145,27 +145,6 @@ class Gel::GodObject
 
     private
 
-    def activate_gem(gem, why: nil)
-      raise gem.version.class.name unless gem.version.class == String
-      if @activated_gems[gem.name]
-        raise @activated_gems[gem.name].version.class.name unless @activated_gems[gem.name].version.class == String
-        return if @activated_gems[gem.name].version == gem.version
-
-        raise Gel::Error::AlreadyActivatedError.new(
-          name: gem.name,
-          existing: @activated_gems[gem.name].version,
-          requested: gem.version,
-          why: why,
-        )
-      end
-
-      gem.dependencies.each do |dep, reqs|
-        Stateless.gem(@store, @activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
-      end
-
-      Stateless.activate_gems(@store, @activated_gems, $LOAD_PATH, [gem])
-    end
-
     def git_depot
       require_relative "git_depot"
       @git_depot ||= Gel::GitDepot.new(@store)
