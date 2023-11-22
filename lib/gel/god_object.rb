@@ -84,7 +84,11 @@ class Gel::GodObject
     end
 
     def activate(fast: false, install: false, output: nil, error: true)
-      @active_lockfile ||= Stateless.activate(@active_lockfile, @architectures, @store, @gemfile, fast: fast, install: install, output: output, error: error)
+      @active_lockfile ||= Stateless.activate(@active_lockfile, @architectures, @store, @gemfile, fast: fast, output: output, error: error) do |loader|
+        require_relative "../../slib/bundler"
+        locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
+        Gel::GodObject.open(locked_store)
+      end
       nil
     end
   end

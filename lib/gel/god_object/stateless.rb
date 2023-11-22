@@ -103,7 +103,7 @@ module Gel::GodObject::Stateless
       end
     end
 
-    def activate(active_lockfile, architectures, store, gemfile, fast: false, install: false, output: nil, error: true)
+    def activate(active_lockfile, architectures, store, gemfile, fast: false, output: nil, error: true)
       loaded = Gel::GodObject.load_gemfile(error: error)
       return(active_lockfile) if loaded.nil?
       return(active_lockfile) if active_lockfile
@@ -119,11 +119,8 @@ module Gel::GodObject::Stateless
       resolved_gem_set ||= write_lock(architectures, store, output: output, lockfile: lockfile)
 
       loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
+      yield(loader)
 
-      require_relative "../../../slib/bundler"
-
-      locked_store = loader.activate(Gel::GodObject, root_store(store), install: install, output: output)
-      Gel::GodObject.open(locked_store)
       true # there is now an active lockfile
     end
 
