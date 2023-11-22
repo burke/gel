@@ -247,6 +247,14 @@ module Gel::GodObject::Stateless
       gemfile_dependencies(gemfile: gemfile) != resolved_gem_set.dependencies
     end
 
+    def load_gemfile(gemfile, path = nil, error: true)
+      path = find_gemfile(@gemfile, path, error: error)
+      return if path.nil?
+
+      content = File.read(path)
+      Gel::GemfileParser.parse(content, path, 1)
+    end
+
     # private
 
     def gemfile_dependencies(gemfile:)

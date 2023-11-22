@@ -79,13 +79,7 @@ class Gel::GodObject
     end
 
     def load_gemfile(path = nil, error: true)
-      return @gemfile if @gemfile
-
-      path = Stateless.find_gemfile(@gemfile, path, error: error)
-      return if path.nil?
-
-      content = File.read(path)
-      @gemfile = Gel::GemfileParser.parse(content, path, 1)
+      @gemfile ||= Stateless.load_gemfile(@gemfile, path, error: error)
     end
 
     def activate(fast: false, install: false, output: nil, error: true)
