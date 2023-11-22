@@ -31,10 +31,30 @@ class Gel::Environment
   def scoped_require(gem_name, path) = Gel::GodObject::Stateless.scoped_require(@impl.__store, Gel::LoadPathManager.activated_gems, gem_name, path)
   def require_groups(*groups) = Gel::GodObject::Stateless.require_groups(@impl.__gemfile, *groups)
 
-  # Significant mutations
-  def activate(fast: false, install: false, output: nil, error: true) = @impl.activate(fast: fast, install: install, output: output, error: error)
+  # Should this be what creates an instance and makes most of the other methods available?
+  def open(store) = @impl.open(store)
+
+  # Significant mutations below
   def activate_for_executable(exes, install: false, output: nil) = @impl.activate_for_executable(exes, install: install, output: output)
-  def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = @impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
   def gem(name, *requirements, why: nil) = @impl.gem(name, *requirements, why: why)
-  def resolve_gem_path(path) = @impl.resolve_gem_path(path)
+
+  def activate(fast: false, install: false, output: nil, error: true)
+    @active_lockfile ||= Gel::GodObject::Stateless.activate(@active_lockfile, @impl.load_gemfile(error: error), @impl.__store, @impl.__gemfile, fast: fast, output: output) do |loader|
+      require_relative "../../slib/bundler"
+      locked_store = loader.activate(Gel.environment, @impl.__store.root_store, install: install, output: output)
+      Gel::GodObject::Stateless.activate_locked_gems(locked_store, &@impl.method(:activate_gems_now))
+    end
+    nil
+  end
+
+  def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
+    Gel::GodObject::Stateless.install_gem(@impl.__store, catalogs, gem_name, requirements, output: output, solve: solve) do |loader|
+      locked_store = loader.activate(Gel.environment, @impl.__store.root_store, install: true, output: output)
+      Gel::GodObject::Stateless.activate_locked_gems(locked_store, &@impl.method(:activate_gems_now))
+    end
+  end
+
+  def resolve_gem_path(path)
+    Gel::GodObject::Stateless.resolve_gem_path(@impl.__store, Gel::LoadPathManager.activated_gems, path, &@impl.method(:activate_gems_now))
+  end
 end

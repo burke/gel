@@ -19,10 +19,6 @@ class Gel::GodObject
       Stateless.activate_locked_gems(@store, &method(:activate_gems_now))
     end
 
-    def resolve_gem_path(path)
-      Stateless.resolve_gem_path(@store, Gel::LoadPathManager.activated_gems, path, &method(:activate_gems_now))
-    end
-
     def gem(name, *requirements, why: nil)
       Stateless.gem(@store, Gel::LoadPathManager.activated_gems, name, *requirements, why: why, &method(:activate_gems_now))
     end
@@ -38,13 +34,6 @@ class Gel::GodObject
         Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
       end
       nil
-    end
-
-    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
-      Stateless.install_gem(@store, catalogs, gem_name, requirements, output: output, solve: solve) do |loader|
-        locked_store = loader.activate(Gel.environment, @store.root_store, install: true, output: output)
-        Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
-      end
     end
 
     def activate_gems_now(preparation, activation, lib_dirs)
