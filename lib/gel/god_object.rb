@@ -112,9 +112,15 @@ class Gel::GodObject
       end
     end
 
+    def activate_gems_now(preparation, activation, lib_dirs)
+      @store.prepare(preparation)
+      @activated_gems.update(activation)
+      $LOAD_PATH.concat lib_dirs
+    end
+
     def activate_for_executable(exes, install: false, output: nil)
       loaded_gemfile = load_gemfile(error: false)
-      Stateless.activate_for_executable(loaded_gemfile, @store, @activated_gems, @gemfile, exes, install: install, output: output) do |loader|
+      Stateless.activate_for_executable(loaded_gemfile, @store, @activated_gems, @gemfile, exes, install: install, output: output, activate_gems_now: method(:activate_gems_now)) do |loader|
         locked_store = loader.activate(Gel::GodObject, @store.root_store, install: install, output: output)
 
         ret = nil

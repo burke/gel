@@ -215,7 +215,7 @@ module Gel::GodObject::Stateless
       end
     end
 
-    def activate_for_executable(loaded_gemfile, store, activated_gems, active_gemfile, exes, install: false, output: nil)
+    def activate_for_executable(loaded_gemfile, store, activated_gems, active_gemfile, exes, activate_gems_now:, install: false, output: nil, &block)
       resolved_gem_set = nil
       outdated_gem_set = nil
       load_error = nil
@@ -318,11 +318,7 @@ module Gel::GodObject::Stateless
           nil
         when 1
           # NOTE: untested
-          gem(store, activated_gems, candidates.first.name) do |preparation, activation, lib_dirs|
-            store.prepare(preparation)
-            activated_gems.update(activation)
-            $LOAD_PATH.concat lib_dirs
-          end
+          gem(store, activated_gems, candidates.first.name, &activate_gems_now)
           return :gem
         else
           # Multiple gems can supply this executable; do we have any
@@ -331,17 +327,9 @@ module Gel::GodObject::Stateless
 
           # NOTE: untested
           if candidates.map(&:name).include?(exe)
-            gem(store, activated_gems, exe) do |preparation, activation, lib_dirs|
-              store.prepare(preparation)
-              activated_gems.update(activation)
-              $LOAD_PATH.concat lib_dirs
-            end
+            gem(store, activated_gems, exe, &activate_gems_now)
           else
-            gem(store, activated_gems, candidates.first.name) do |preparation, activation, lib_dirs|
-              store.prepare(preparation)
-              activated_gems.update(activation)
-              $LOAD_PATH.concat lib_dirs
-            end
+            gem(store, activated_gems, candidates.first.name, &activate_gems_now)
           end
 
           return :gem
@@ -382,11 +370,7 @@ module Gel::GodObject::Stateless
       end
 
       gem.dependencies.each do |dep, reqs|
-        gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why]) do |preparation, activation, lib_dirs|
-          store.prepare(preparation)
-          activated_gems.update(activation)
-          $LOAD_PATH.concat lib_dirs
-        end
+        gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why], &block)
       end
 
       activate_gems([gem], &block)
