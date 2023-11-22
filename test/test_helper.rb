@@ -72,7 +72,7 @@ def with_empty_cache
 end
 
 def with_empty_multi_store(fallbacks: false)
-  original_stores = Gel::GodObject.store.root_store
+  original_stores = Gel.environment.store.root_store
 
   Dir.mktmpdir do |dir|
     stores = {}

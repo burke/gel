@@ -11,8 +11,8 @@ class MultiStoreTest < Minitest::Test
                                        "ruby" => store_2)
 
         output = subprocess_output(<<-'END', store: multi)
-          Gel::GodObject.open(store)
-          require Gel::GodObject.resolve_gem_path("rack/test")
+          Gel.open_environment(store)
+          require Gel.environment.resolve_gem_path("rack/test")
 
           puts $:.grep(/\brack(?!-test)/).join(":")
           puts $:.grep(/rack-test/).join(":")

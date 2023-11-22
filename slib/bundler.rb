@@ -6,7 +6,7 @@ module Bundler
   VERSION = "3.compat"
 
   def self.setup
-    Gel::GodObject.activate(output: $stderr)
+    Gel.environment.activate(output: $stderr)
   end
 
   def self.original_env
@@ -14,7 +14,7 @@ module Bundler
   end
 
   def self.require(*groups)
-    Gel::GodObject.require_groups(*groups)
+    Gel.environment.require_groups(*groups)
   end
 
   def self.ruby_scope
@@ -23,27 +23,27 @@ module Bundler
 
   def self.default_gemfile
     Kernel.require "pathname"
-    ::Pathname.new(Gel::GodObject.find_gemfile(error: false) || "Gemfile")
+    ::Pathname.new(Gel.environment.find_gemfile(error: false) || "Gemfile")
   end
 
   def self.default_lockfile
     Kernel.require "pathname"
-    ::Pathname.new(Gel::GodObject.lockfile_name)
+    ::Pathname.new(Gel.environment.lockfile_name)
   end
 
   def self.bundle_path
     Kernel.require "pathname"
-    ::Pathname.new(Gel::GodObject.store.root_store.root)
+    ::Pathname.new(Gel.environment.store.root_store.root)
   end
 
   def self.root
     Kernel.require "pathname"
-    ::Pathname.new(Gel::GodObject.gemfile.filename).dirname
+    ::Pathname.new(Gel.environment.gemfile.filename).dirname
   end
 
   module RubygemsIntegration
     def self.loaded_specs(gem_name)
-      Gem::Specification.new(Gel::GodObject.activated_gems[gem_name])
+      Gem::Specification.new(Gel.environment.activated_gems[gem_name])
     end
   end
 
@@ -78,7 +78,7 @@ module Bundler
   end
 
   def self.settings
-    if gemfile = Gel::GodObject.gemfile
+    if gemfile = Gel.environment.gemfile
       { "gemfile" => gemfile.filename }
     else
       {}

@@ -86,7 +86,7 @@ class Gel::GodObject
     def activate(fast: false, install: false, output: nil, error: true)
       @active_lockfile ||= Stateless.activate(@active_lockfile, load_gemfile(error: error), @store, @gemfile, fast: fast, output: output) do |loader|
         require_relative "../../slib/bundler"
-        locked_store = loader.activate(Gel::GodObject, @store.root_store, install: install, output: output)
+        locked_store = loader.activate(Gel.environment, @store.root_store, install: install, output: output)
         open(locked_store)
       end
       nil
@@ -94,7 +94,7 @@ class Gel::GodObject
 
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
       Stateless.install_gem(@store, catalogs, gem_name, requirements, output: output, solve: solve) do |loader|
-        locked_store = loader.activate(Gel::GodObject, @store.root_store, install: true, output: output)
+        locked_store = loader.activate(Gel.environment, @store.root_store, install: true, output: output)
         open(locked_store)
       end
     end
@@ -107,7 +107,7 @@ class Gel::GodObject
     def activate_for_executable(exes, install: false, output: nil)
       loaded_gemfile = load_gemfile(error: false)
       Stateless.activate_for_executable(loaded_gemfile, @store, Gel::LoadPathManager.activated_gems, @gemfile, exes, install: install, output: output, activate_gems_now: method(:activate_gems_now)) do |loader|
-        locked_store = loader.activate(Gel::GodObject, @store.root_store, install: install, output: output)
+        locked_store = loader.activate(Gel.environment, @store.root_store, install: install, output: output)
 
         ret = nil
         exes.each do |exe|

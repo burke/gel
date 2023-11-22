@@ -13,7 +13,7 @@ class CLITest < Minitest::Test
     ENV["GEL_LOCKFILE"] = nil
     ENV["RUBYLIB"] = nil
     ENV["RUBYOPT"] = nil
-    Gel::GodObject.gemfile = nil
+    Gel.environment.gemfile = nil
   end
 
   def teardown
@@ -51,7 +51,7 @@ class CLITest < Minitest::Test
   end
 
   def test_basic_install
-    Gel::GodObject.expects(:activate).with(has_entries(install: true, output: $stderr))
+    Gel.environment.expects(:activate).with(has_entries(install: true, output: $stderr))
 
     Gel::Command.run(%W(install))
   end
@@ -68,7 +68,7 @@ class CLITest < Minitest::Test
       File.write("#{dir}/ruby-executable", "#!/usr/bin/ruby\n")
       FileUtils.chmod 0755, "#{dir}/ruby-executable"
 
-      Gel::GodObject.expects(:activate)
+      Gel.environment.expects(:activate)
 
       Kernel.expects(:load).with do |path|
         assert_equal "ruby-executable", path

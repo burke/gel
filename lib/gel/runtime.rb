@@ -20,8 +20,8 @@ Gel::HostSystem.store_keys.each do |key|
 end
 store = Gel::MultiStore.new(dir, stores)
 
-Gel::GodObject.open(store)
+Gel.open_environment(store)
 
 if ENV["GEL_LOCKFILE"] && ENV["GEL_LOCKFILE"] != ""
-  Gel::GodObject.activate(fast: true, output: $stderr)
+  Gel.environment.activate(fast: true, output: $stderr)
 end

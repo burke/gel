@@ -797,3 +797,5 @@ module Gel::GodObject::Stateless
     end
   end
 end
+
+

@@ -7,8 +7,8 @@ require "gel/package/installer"
 
 class InstallTest < Minitest::Test
   def test_no_gemfile
-    Gel::GodObject.gemfile = nil
-    exception = assert_raises(Exception) { Gel::GodObject.find_gemfile("/blub") }
+    Gel.environment.gemfile = nil
+    exception = assert_raises(Exception) { Gel.environment.find_gemfile("/blub") }
     assert_equal( "No Gemfile found in \"/blub\"", exception.message )
   end
 

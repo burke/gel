@@ -82,10 +82,10 @@ gem "rack-test"
 gem "hoe", require: false
 GEMFILE
 
-        Gel::GodObject.open(store)
-        Gel::GodObject.gem "rack"
-        Gel::GodObject.gem "rack-test"
-        result.autorequire(Gel::GodObject)
+        Gel.open_environment(store)
+        Gel.environment.gem "rack"
+        Gel.environment.gem "rack-test"
+        result.autorequire(Gel.environment)
 
         puts $".grep(/\brack\//).first
         puts $".grep(/rack\/test\//).first

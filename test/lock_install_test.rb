@@ -47,8 +47,8 @@ INFO
           to_return(body: File.open(fixture_file("rack-test-0.6.3.gem")))
 
         loader = Gel::LockLoader.new(Gel::ResolvedGemSet.load(lock_path))
-        locked = loader.activate(Gel::GodObject, store, install: true)
-        Gel::GodObject.open locked
+        locked = loader.activate(Gel.environment, store, install: true)
+        Gel.open_environment locked
 
         puts $:.grep(/\brack(?!-test)/).join(":")
         puts $:.grep(/rack-test/).join(":")
@@ -135,8 +135,8 @@ INFO
           to_return(body: File.open(fixture_file("rack-test-0.6.3.gem")))
 
         loader = Gel::LockLoader.new(Gel::ResolvedGemSet.load(lock_path))
-        locked = loader.activate(Gel::GodObject, store, install: true)
-        Gel::GodObject.open locked
+        locked = loader.activate(Gel.environment, store, install: true)
+        Gel.open_environment locked
 
         puts $:.grep(/\brack(?!-test)/).join(":")
         puts $:.grep(/rack-test/).join(":")

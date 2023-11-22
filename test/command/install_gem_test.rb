@@ -17,7 +17,7 @@ class InstallGemTest < Minitest::Test
           stub_request(:get, "https://rubygems.org/gems/rack-test-0.6.3.gem")
             .to_return(body: File.open(fixture_file("rack-test-0.6.3.gem")))
 
-          Gel::GodObject.open(store)
+          Gel.open_environment(store)
 
           require "gel/command"
           Gel::Command.run(["install-gem", "rack-test", "0.6.3"])
@@ -25,7 +25,7 @@ class InstallGemTest < Minitest::Test
       end
 
       output = subprocess_output(<<-'END', store: store, lock_path: nil)
-        Gel::GodObject.open(store)
+        Gel.open_environment(store)
         gem "rack-test"
 
         puts $:.grep(/\brack(?!-test)/).join(":")

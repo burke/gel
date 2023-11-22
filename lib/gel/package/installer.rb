@@ -42,7 +42,7 @@ class Gel::Package::Installer
 
       raise "gem already installed" if store.gem?(spec.name, spec.version)
 
-      @config = Gel::GodObject.config
+      @config = Gel.environment.config
 
       @root = store.gem_root(spec.name, spec.version)
       Gel::Util.rm_rf(@root) if @root && Dir.exist?(@root)
@@ -116,7 +116,7 @@ class Gel::Package::Installer
           lockfile = Tempfile.new(["#{spec.name}.lockfile", ".lock"])
           lockfile.close
 
-          Gel::GodObject.write_lock(store: @root_store, output: nil, gemfile: Gel::GemfileParser.parse(File.read(gemfile.path), gemfile.path, 1), lockfile: lockfile.path)
+          Gel.environment.write_lock(store: @root_store, output: nil, gemfile: Gel::GemfileParser.parse(File.read(gemfile.path), gemfile.path, 1), lockfile: lockfile.path)
 
           lockfile
         end
