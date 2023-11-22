@@ -9,47 +9,35 @@ class Gel::GodObject
   IGNORE_LIST = %w(bundler gel rubygems-update)
 
   class << self
-    def store = Impl.store
     def gemfile=(o)
       Impl.gemfile = o
     end
-    def gemfile = Impl.gemfile
-    def architectures = Impl.architectures
-    def platform?(platform) = Impl.platform?(platform)
-    def config = Impl.config
-    def locked? = Impl.locked?
-    def store_set = Impl.store_set
+
+    def activate(fast: false, install: false, output: nil, error: true) = Impl.activate(fast: fast, install: install, output: output, error: error)
+    def activate_for_executable(exes, install: false, output: nil) = Impl.activate_for_executable(exes, install: install, output: output)
     def activated_gems = Impl.activated_gems
+    def config = Impl.config
+    def filtered_gems(gems = Impl.gemfile.gems) = Impl.filtered_gems(gems)
+    def find_executable(exe, gem_name = nil, gem_version = nil) = Impl.find_executable(exe, gem_name, gem_version)
+    def find_gem(name, *requirements, &condition) = Impl.find_gem(name, *requirements, &condition)
+    def find_gemfile(path = nil, error: true) = Impl.find_gemfile(path, error: error)
+    def gem(name, *requirements, why: nil) = Impl.gem(name, *requirements, why: why)
+    def gem_for_path(path) = Impl.gem_for_path(path)
+    def gem_has_file?(gem_name, path) = Impl.gem_has_file?(gem_name, path)
+    def gemfile = Impl.gemfile
+    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = Impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
+    def load_gemfile(path = nil, error: true) = Impl.load_gemfile(path, error: error)
+    def locked? = Impl.locked?
+    def lockfile_name(gemfile = self.gemfile&.filename) = Impl.lockfile_name(gemfile)
+    def modified_rubylib = Impl.modified_rubylib
     def open(store) = Impl.open(store)
     def original_rubylib = Impl.original_rubylib
-    def modified_rubylib = Impl.modified_rubylib
-    def find_gemfile(path = nil, error: true) = Impl.find_gemfile(path, error: error)
-    def load_gemfile(path = nil, error: true) = Impl.load_gemfile(path, error: error)
-    def lockfile_name(gemfile = self.gemfile&.filename) = Impl.lockfile_name(gemfile)
-    def with_store(store) = Impl.with_store(store)
-    def root_store(store = store()) = Impl.root_store(store)
-    def with_root_store(&block) = Impl.with_root_store(&block)
-    def git_depot = Impl.git_depot
-    def solve_for_gemfile(store: store(), output: nil, gemfile: Gel::GodObject.load_gemfile, lockfile: Gel::GodObject.lockfile_name, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil) = Impl.solve_for_gemfile(store: store, output: output, gemfile: gemfile, lockfile: lockfile, catalog_options: catalog_options, solve: solve, preference_strategy: preference_strategy, platforms: platforms)
-    def gemfile_dependencies(gemfile:) = Impl.gemfile_dependencies(gemfile: gemfile)
-    def write_lock(output: nil, lockfile: lockfile_name, **args) = Impl.write_lock(output: output, lockfile: lockfile, **args)
-    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = Impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
-    def activate(fast: false, install: false, output: nil, error: true) = Impl.activate(fast: fast, install: install, output: output, error: error)
-    def lock_outdated?(gemfile, resolved_gem_set) = Impl.lock_outdated?(gemfile, resolved_gem_set)
-    def activate_for_executable(exes, install: false, output: nil) = Impl.activate_for_executable(exes, install: install, output: output)
-    def find_executable(exe, gem_name = nil, gem_version = nil) = Impl.find_executable(exe, gem_name, gem_version)
-    def filtered_gems(gems = self.gemfile.gems) = Impl.filtered_gems(gems)
-    def require_groups(*groups) = Impl.require_groups(*groups)
-    def find_gem(name, *requirements, &condition) = Impl.find_gem(name, *requirements, &condition)
-    def gem(name, *requirements, why: nil) = Impl.gem(name, *requirements, why: why)
-    def activate_gem(gem, why: nil) = Impl.activate_gem(gem, why: why)
-    def activate_gems(gems) = Impl.activate_gems(gems)
-    def gems_for_activation(gem, why: nil, context: {}) = Impl.gems_for_activation(gem, why: why, context: context)
-    def gem_has_file?(gem_name, path) = Impl.gem_has_file?(gem_name, path)
-    def scoped_require(gem_name, path) = Impl.scoped_require(gem_name, path)
-    def scan_for_path(path) = Impl.scan_for_path(path)
-    def gem_for_path(path) = Impl.gem_for_path(path)
     def resolve_gem_path(path) = Impl.resolve_gem_path(path)
+    def root_store(store = store()) = Impl.root_store(store)
+    def scoped_require(gem_name, path) = Impl.scoped_require(gem_name, path)
+    def store = Impl.store
+    def store_set = Impl.store_set
+    def write_lock(output: nil, lockfile: lockfile_name, **args) = Impl.write_lock(output: output, lockfile: lockfile, **args)
   end
 
   class Impl
