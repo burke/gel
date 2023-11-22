@@ -15,6 +15,10 @@ class Gel::Store
     @monitor = Monitor.new
   end
 
+  def root_store
+    self
+  end
+
   def marshal_dump
     @root
   end

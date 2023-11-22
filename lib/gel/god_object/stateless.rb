@@ -57,14 +57,6 @@ module Gel::GodObject::Stateless
       ENV["GEL_LOCKFILE"] || (gemfile && gemfile + ".lock") || "Gemfile.lock"
     end
 
-    def root_store(store)
-      if store.is_a?(Gel::LockedStore)
-        store.inner
-      else
-        store
-      end
-    end
-
     def activate(active_lockfile, loaded_gemfile, store, active_gemfile, fast: false, output: nil)
       return(active_lockfile) if loaded_gemfile.nil?
       return(active_lockfile) if active_lockfile
@@ -429,7 +421,7 @@ module Gel::GodObject::Stateless
       server_catalogs = all_sources.map { |s| Gel::Catalog.new(s, initial_gems: server_gems, work_pool: catalog_pool, **catalog_options) }
 
       require_relative "../store_catalog"
-      local_catalogs = local_source ? [Gel::StoreCatalog.new(root_store(store))] : []
+      local_catalogs = local_source ? [Gel::StoreCatalog.new(store.root_store)] : []
 
       git_sources = gemfile.gems.map { |_, _, o|
         if o[:git]

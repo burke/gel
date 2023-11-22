@@ -33,7 +33,7 @@ module Bundler
 
   def self.bundle_path
     Kernel.require "pathname"
-    ::Pathname.new(Gel::GodObject.root_store.root)
+    ::Pathname.new(Gel::GodObject.store.root_store.root)
   end
 
   def self.root

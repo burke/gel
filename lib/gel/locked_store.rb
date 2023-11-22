@@ -12,6 +12,10 @@ class Gel::LockedStore
     @full_cache = false
   end
 
+  def root_store
+    @inner
+  end
+
   def git_depot
     @git_depot ||= begin
       require_relative "git_depot"
