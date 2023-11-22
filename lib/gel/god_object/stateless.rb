@@ -203,8 +203,7 @@ module Gel::GodObject::Stateless
       )
 
       loader = Gel::LockLoader.new(gem_set)
-      locked_store = loader.activate(Gel::GodObject, root_store(store), install: true, output: output)
-      Gel::GodObject.open(locked_store)
+      yield(loader)
     end
 
     def load_gemfile(gemfile, path = nil, error: true)
