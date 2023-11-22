@@ -18,7 +18,6 @@ class Gel::GodObject
     def activate(fast: false, install: false, output: nil, error: true) = impl.activate(fast: fast, install: install, output: output, error: error)
     def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
     def activated_gems = impl.__activated_gems
-    def config = impl.config
     def filtered_gems(gems = impl.__gemfile.gems) = Stateless.filtered_gems(gems)
     def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(impl.__store, exe, gem_name, gem_version)
     def find_gem(name, *requirements, &condition) = Stateless.find_gem(impl.__store, name, *requirements, &condition)
@@ -27,7 +26,6 @@ class Gel::GodObject
     def gem_for_path(path) = Stateless.gem_for_path(impl.__store, impl.__activated_gems, path)
     def gemfile = impl.__gemfile
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
-    def load_gemfile(path = nil, error: true) = impl.load_gemfile(path, error: error)
     def locked? = Stateless.locked?(impl.__store)
     def lockfile_name(gemfile = self.gemfile&.filename) = Stateless.lockfile_name(gemfile)
     def open(store) = impl.open(store)
@@ -35,6 +33,9 @@ class Gel::GodObject
     def store = impl.__store
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.load_gemfile, impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
+
+    # Not related to anything else; just global state.
+    def config = impl.config
 
     # Just utility methods; no relationship to this really. Also could be named better...
     def modified_rubylib = Stateless.modified_rubylib # rubylib_with_gel
@@ -95,7 +96,7 @@ class Gel::GodObject
     end
 
     def activate_for_executable(exes, install: false, output: nil)
-      loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
+      loaded_gemfile = load_gemfile(error: false)
       Stateless.activate_for_executable(loaded_gemfile, @store, @activated_gems, @gemfile, exes, install: install, output: output) do |loader|
         locked_store = loader.activate(Gel::GodObject, @store.root_store, install: install, output: output)
 
