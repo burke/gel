@@ -13,7 +13,7 @@ end
 dir = File.realpath(dir)
 
 stores = {}
-Gel::GodObject.store_set.each do |key|
+Gel::HostSystem.store_keys.each do |key|
   subdir = File.join(dir, key)
   Dir.mkdir(subdir) unless Dir.exist?(subdir)
   stores[key] = Gel::Store.new(subdir)

@@ -4,31 +4,6 @@ module Gel::GodObject::Stateless
   class << self
     def locked?(store) = store.is_a?(Gel::LockedStore)
 
-    def build_architecture_list
-      local = Gel::Support::GemPlatform.local
-
-      list = []
-      if local.cpu == "universal" && RUBY_PLATFORM =~ /^universal\.([^-]+)/
-        list << "#$1-#{local.os}"
-      end
-      list << "#{local.cpu}-#{local.os}"
-      list << "universal-#{local.os}" unless local.cpu == "universal"
-      list = list.map { |arch| "#{arch}-#{local.version}" } + list if local.version
-      list << "java" if defined?(org.jruby.Ruby)
-      list << "ruby"
-
-      list.compact.map(&:freeze).freeze
-    end
-
-    def store_set(architectures)
-      list = []
-      architectures.each do |arch|
-        list << Gel::MultiStore.subkey(arch, true)
-        list << Gel::MultiStore.subkey(arch, false)
-      end
-      list
-    end
-
     def original_rubylib
       lib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
       lib.delete File.expand_path("../../../slib", __dir__)
@@ -90,7 +65,7 @@ module Gel::GodObject::Stateless
       end
     end
 
-    def activate(active_lockfile, architectures, store, gemfile, fast: false, output: nil, error: true)
+    def activate(active_lockfile, store, gemfile, fast: false, output: nil, error: true)
       loaded = Gel::GodObject.load_gemfile(error: error)
       return(active_lockfile) if loaded.nil?
       return(active_lockfile) if active_lockfile
@@ -103,7 +78,7 @@ module Gel::GodObject::Stateless
 
       return(active_lockfile) if fast && !resolved_gem_set
 
-      resolved_gem_set ||= write_lock(architectures, store, output: output, lockfile: lockfile)
+      resolved_gem_set ||= write_lock(store, output: output, lockfile: lockfile)
 
       loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
       yield(loader)
@@ -202,10 +177,9 @@ module Gel::GodObject::Stateless
       gemfile.autorequire(Gel::GodObject, gems)
     end
 
-    def write_lock(architectures, store, output: nil, lockfile: lockfile_name, **args)
+    def write_lock(store, output: nil, lockfile: lockfile_name, **args)
       gemfile = Gel::GodObject.load_gemfile
       gem_set = solve_for_gemfile(
-        architectures: architectures,
         store: store, output: output, gemfile: gemfile, lockfile: lockfile,
         **args
       )
@@ -218,15 +192,14 @@ module Gel::GodObject::Stateless
       gem_set
     end
 
-    def install_gem(architectures, store, catalogs, gem_name, requirements = nil, output: nil, solve: true)
+    def install_gem(store, catalogs, gem_name, requirements = nil, output: nil, solve: true)
       gemfile = Gel::GemfileParser.inline do
         source "https://rubygems.org"
         gem gem_name, *requirements
       end
 
       gem_set = solve_for_gemfile(
-        architectures: architectures, store: store,
-        output: output, solve: solve, gemfile: gemfile, lockfile: lockfile_name(gemfile),
+        store: store, output: output, solve: solve, gemfile: gemfile, lockfile: lockfile_name(gemfile),
       )
 
       loader = Gel::LockLoader.new(gem_set)
@@ -436,7 +409,7 @@ module Gel::GodObject::Stateless
       end.sort
     end
 
-    def solve_for_gemfile(architectures:, store:, output:, gemfile:, lockfile:, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
+    def solve_for_gemfile(store:, output:, gemfile:, lockfile:, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
       output = nil if $DEBUG
 
       target_platforms = Array(platforms)
@@ -450,8 +423,8 @@ module Gel::GodObject::Stateless
       end
 
       if target_platforms.empty?
-        possible_inferred_targets = architectures.map { |arch| Gel::Support::GemPlatform.new(arch) }
-        target_platforms = [architectures.first]
+        possible_inferred_targets = Gel::HostSystem.architectures.map { |arch| Gel::Support::GemPlatform.new(arch) }
+        target_platforms = [Gel::HostSystem.architectures.first]
       end
 
       require_relative "../work_pool"

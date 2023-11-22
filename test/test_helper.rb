@@ -76,7 +76,7 @@ def with_empty_multi_store(fallbacks: false)
 
   Dir.mktmpdir do |dir|
     stores = {}
-    Gel::GodObject.store_set.each do |arch|
+    Gel::HostSystem.store_keys.each do |arch|
       subdir = File.join(dir, arch)
       Dir.mkdir subdir
       stores[arch] = Gel::Store.new(subdir)

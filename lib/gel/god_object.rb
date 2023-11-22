@@ -27,7 +27,7 @@ class Gel::GodObject
     def gem_for_path(path) = Stateless.gem_for_path(impl.__store, impl.__activated_gems, path)
     def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, impl.__activated_gems, gem_name, path)
     def gemfile = impl.__gemfile
-    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = Stateless.install_gem(impl.__architectures, impl.__store, catalogs, gem_name, requirements, output: output, solve: solve)
+    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = Stateless.install_gem(impl.__store, catalogs, gem_name, requirements, output: output, solve: solve)
     def load_gemfile(path = nil, error: true) = impl.load_gemfile(path, error: error)
     def locked? = Stateless.locked?(impl.__store)
     def lockfile_name(gemfile = self.gemfile&.filename) = Stateless.lockfile_name(gemfile)
@@ -38,8 +38,7 @@ class Gel::GodObject
     def root_store(store = store()) = Stateless.root_store(store)
     def scoped_require(gem_name, path) = Stateless.scoped_require(impl.__store, impl.__activated_gems, gem_name, path)
     def store = impl.__store
-    def store_set = Stateless.store_set(impl.__architectures)
-    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.__architectures, impl.__store, output: output, lockfile: lockfile, **args)
+    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
   end
 
@@ -50,7 +49,6 @@ class Gel::GodObject
     def __gemfile = @gemfile
     def __store = @store
     def __activated_gems = @activated_gems
-    def __architectures = @architectures
 
     private_class_method :new
     def self.instance
@@ -62,7 +60,6 @@ class Gel::GodObject
       @activated_gems = {}
       @gemfile = nil
       @active_lockfile = false
-      @architectures = Stateless.build_architecture_list
     end
 
     def config
@@ -84,7 +81,7 @@ class Gel::GodObject
     end
 
     def activate(fast: false, install: false, output: nil, error: true)
-      @active_lockfile ||= Stateless.activate(@active_lockfile, @architectures, @store, @gemfile, fast: fast, output: output, error: error) do |loader|
+      @active_lockfile ||= Stateless.activate(@active_lockfile, @store, @gemfile, fast: fast, output: output, error: error) do |loader|
         require_relative "../../slib/bundler"
         locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
         open(locked_store)
