@@ -108,7 +108,7 @@ module Gel::GodObject::Stateless
       return(active_lockfile) if loaded.nil?
       return(active_lockfile) if active_lockfile
 
-      lockfile = Gel::GodObject.lockfile_name
+      lockfile = lockfile_name(loaded.filename)
       if File.exist?(lockfile)
         resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
         resolved_gem_set = nil if !fast && lock_outdated?(loaded, resolved_gem_set)
@@ -724,7 +724,7 @@ module Gel::GodObject::Stateless
       load_error = nil
 
       if loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
-        lockfile = Gel::GodObject.lockfile_name
+        lockfile = lockfile_name(loaded_gemfile.filename)
         if File.exist?(lockfile)
           resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
 
