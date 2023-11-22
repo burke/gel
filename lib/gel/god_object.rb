@@ -101,17 +101,7 @@ class Gel::GodObject
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(output: output, lockfile: lockfile, **args)
 
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
-      gemfile = Gel::GemfileParser.inline do
-        source "https://rubygems.org"
-
-        gem gem_name, *requirements
-      end
-
-      gem_set = solve_for_gemfile(output: output, solve: solve, gemfile: gemfile)
-
-      loader = Gel::LockLoader.new(gem_set)
-      locked_store = loader.activate(self, root_store, install: true, output: output)
-      open(locked_store)
+      Stateless.install_gem(@architectures, @store, catalogs, gem_name, requirements, output: output, solve: solve)
     end
 
     def activate(fast: false, install: false, output: nil, error: true)
@@ -604,7 +594,11 @@ class Gel::GodObject
       end
     end
 
-    def solve_for_gemfile(store: @store, output: nil, gemfile: Gel::GodObject.load_gemfile, lockfile: Gel::GodObject.lockfile_name, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
+    def solve_for_gemfile(
+      store: @store, output: nil, gemfile: Gel::GodObject.load_gemfile,
+      lockfile: Gel::GodObject.lockfile_name, catalog_options: {},
+      solve: true, preference_strategy: nil, platforms: nil
+    )
       Stateless.solve_for_gemfile(
         architectures: @architectures,
         store: store, output: output, gemfile: gemfile, lockfile: lockfile,

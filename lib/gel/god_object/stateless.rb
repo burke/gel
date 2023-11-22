@@ -115,6 +115,22 @@ module Gel::GodObject::Stateless
       gem_set
     end
 
+    def install_gem(architectures, store, catalogs, gem_name, requirements = nil, output: nil, solve: true)
+      gemfile = Gel::GemfileParser.inline do
+        source "https://rubygems.org"
+        gem gem_name, *requirements
+      end
+
+      gem_set = solve_for_gemfile(
+        architectures: architectures, store: store,
+        output: output, solve: solve, gemfile: gemfile, lockfile: lockfile_name(gemfile),
+      )
+
+      loader = Gel::LockLoader.new(gem_set)
+      locked_store = loader.activate(Gel::GodObject, root_store(store), install: true, output: output)
+      Gel::GodObject.open(locked_store)
+    end
+
     # private
 
     def gemfile_dependencies(gemfile:)
