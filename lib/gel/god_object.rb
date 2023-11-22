@@ -20,6 +20,7 @@ class Gel::GodObject
     def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
     def open(store) = impl.open(store)
+    def gem(name, *requirements, why: nil) = impl.gem(name, *requirements, why: why)
 
     # Just readers
     def activated_gems = impl.__activated_gems
@@ -32,7 +33,6 @@ class Gel::GodObject
     def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(impl.__store, exe, gem_name, gem_version)
     def find_gem(name, *requirements, &condition) = Stateless.find_gem(impl.__store, name, *requirements, &condition)
     def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
-    def gem(name, *requirements, why: nil) = Stateless.gem(impl.__store, impl.__activated_gems, name, *requirements, why: why)
     def gem_for_path(path) = Stateless.gem_for_path(impl.__store, impl.__activated_gems, path)
     def locked? = Stateless.locked?(impl.__store)
     def resolve_gem_path(path) = Stateless.resolve_gem_path(impl.__store, impl.__activated_gems, path)
@@ -73,6 +73,14 @@ class Gel::GodObject
 
     def config
       @config ||= Gel::Config.new
+    end
+
+    def gem(name, *requirements, why: nil)
+      Stateless.gem(@store, @activated_gems, name, *requirements, why: why) do |preparation, activation, lib_dirs|
+        @store.prepare(preparation)
+        @activated_gems.update(activation)
+        $LOAD_PATH.concat lib_dirs
+      end
     end
 
     def open(store)

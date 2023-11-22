@@ -77,7 +77,7 @@ module Gel::GodObject::Stateless
       true # there is now an active lockfile
     end
 
-    def gem(store, activated_gems, name, *requirements, why: nil)
+    def gem(store, activated_gems, name, *requirements, why: nil, &block)
       return if Gel::GodObject::IGNORE_LIST.include?(name)
 
       requirements = Gel::Support::GemRequirement.new(requirements)
@@ -102,7 +102,7 @@ module Gel::GodObject::Stateless
       end
 
       if gem
-        activate_gem(store, activated_gems, gem, why: why)
+        activate_gem(store, activated_gems, gem, why: why, &block)
       else
         raise Gel::Error::UnsatisfiedDependencyError.new(
           name: name,
@@ -318,7 +318,11 @@ module Gel::GodObject::Stateless
           nil
         when 1
           # NOTE: untested
-          gem(store, activated_gems, candidates.first.name)
+          gem(store, activated_gems, candidates.first.name) do |preparation, activation, lib_dirs|
+            store.prepare(preparation)
+            activated_gems.update(activation)
+            $LOAD_PATH.concat lib_dirs
+          end
           return :gem
         else
           # Multiple gems can supply this executable; do we have any
@@ -327,9 +331,17 @@ module Gel::GodObject::Stateless
 
           # NOTE: untested
           if candidates.map(&:name).include?(exe)
-            gem(store, activated_gems, exe)
+            gem(store, activated_gems, exe) do |preparation, activation, lib_dirs|
+              store.prepare(preparation)
+              activated_gems.update(activation)
+              $LOAD_PATH.concat lib_dirs
+            end
           else
-            gem(store, activated_gems, candidates.first.name)
+            gem(store, activated_gems, candidates.first.name) do |preparation, activation, lib_dirs|
+              store.prepare(preparation)
+              activated_gems.update(activation)
+              $LOAD_PATH.concat lib_dirs
+            end
           end
 
           return :gem
@@ -355,7 +367,7 @@ module Gel::GodObject::Stateless
 
     private
 
-    def activate_gem(store, activated_gems, gem, why: nil)
+    def activate_gem(store, activated_gems, gem, why: nil, &block)
       raise gem.version.class.name unless gem.version.class == String
       if activated_gems[gem.name]
         raise activated_gems[gem.name].version.class.name unless activated_gems[gem.name].version.class == String
@@ -370,14 +382,14 @@ module Gel::GodObject::Stateless
       end
 
       gem.dependencies.each do |dep, reqs|
-        gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
+        gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why]) do |preparation, activation, lib_dirs|
+          store.prepare(preparation)
+          activated_gems.update(activation)
+          $LOAD_PATH.concat lib_dirs
+        end
       end
 
-      activate_gems([gem]) do |preparation, activation, lib_dirs|
-        store.prepare(preparation)
-        activated_gems.update(activation)
-        $LOAD_PATH.concat lib_dirs
-      end
+      activate_gems([gem], &block)
     end
 
     def lock_outdated?(gemfile, resolved_gem_set)
