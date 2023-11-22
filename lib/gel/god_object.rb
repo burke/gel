@@ -62,23 +62,7 @@ class Gel::GodObject
       @activated_gems = {}
       @gemfile = nil
       @active_lockfile = false
-
-      @architectures =
-        begin
-          local = Gel::Support::GemPlatform.local
-
-          list = []
-          if local.cpu == "universal" && RUBY_PLATFORM =~ /^universal\.([^-]+)/
-            list << "#$1-#{local.os}"
-          end
-          list << "#{local.cpu}-#{local.os}"
-          list << "universal-#{local.os}" unless local.cpu == "universal"
-          list = list.map { |arch| "#{arch}-#{local.version}" } + list if local.version
-          list << "java" if defined?(org.jruby.Ruby)
-          list << "ruby"
-
-          list
-        end.compact.map(&:freeze).freeze
+      @architectures = Stateless.build_architecture_list
     end
 
     GEMFILE_PLATFORMS = begin
