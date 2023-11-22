@@ -145,6 +145,30 @@ module Gel::GodObject::Stateless
       gem
     end
 
+    def resolve_gem_path(store, activated_gems, path)
+      path = path.to_s # might be e.g. a Pathname
+
+      gem, file, resolved = scan_for_path(store, activated_gems, path)
+
+      if file
+        if gem && resolved
+          activate_gems(store, activated_gems, $LOAD_PATH, resolved)
+        else
+          unless resolved
+            # This is a cheat: we're assuming the caller is about to require
+            # the file
+            Gel::Stdlib.instance.activate(path)
+          end
+        end
+
+        return file
+      elsif resolved
+        raise resolved
+      end
+
+      path
+    end
+
     def activate_gem(store, activated_gems, gem, why: nil)
       raise gem.version.class.name unless gem.version.class == String
       if activated_gems[gem.name]

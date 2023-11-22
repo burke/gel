@@ -34,7 +34,7 @@ class Gel::GodObject
     def modified_rubylib = Stateless.modified_rubylib
     def open(store) = impl.open(store)
     def original_rubylib = Stateless.original_rubylib
-    def resolve_gem_path(path) = impl.resolve_gem_path(path)
+    def resolve_gem_path(path) = Stateless.resolve_gem_path(impl.__store, impl.__activated_gems, path)
     def root_store(store = store()) = Stateless.root_store(store)
     def scoped_require(gem_name, path) = Stateless.scoped_require(impl.__store, impl.__activated_gems, gem_name, path)
     def store = impl.__store
@@ -111,30 +111,6 @@ class Gel::GodObject
 
       locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
       open(locked_store)
-    end
-
-    def resolve_gem_path(path)
-      path = path.to_s # might be e.g. a Pathname
-
-      gem, file, resolved = Stateless.scan_for_path(@store, @activated_gems, path)
-
-      if file
-        if gem && resolved
-          Stateless.activate_gems(@store, @activated_gems, $LOAD_PATH, resolved)
-        else
-          unless resolved
-            # This is a cheat: we're assuming the caller is about to require
-            # the file
-            Gel::Stdlib.instance.activate(path)
-          end
-        end
-
-        return file
-      elsif resolved
-        raise resolved
-      end
-
-      path
     end
 
     private
