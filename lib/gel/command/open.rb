@@ -18,14 +18,14 @@ class Gel::Command::Open < Gel::Command
     editor = ENV.fetch("GEL_EDITOR", ENV["EDITOR"])
     raise "An editor must be set using either $GEL_EDITOR or $EDITOR" unless editor
 
-    Gel::Environment.activate(output: $stderr, error: false)
+    Gel::GodObject.activate(output: $stderr, error: false)
 
-    found_gem = Gel::Environment.find_gem(gem_name, version)
+    found_gem = Gel::GodObject.find_gem(gem_name, version)
     unless found_gem
       raise Gel::Error::UnsatisfiedDependencyError.new(
         name: gem_name,
-        was_locked: Gel::Environment.locked?,
-        found_any: Gel::Environment.find_gem(gem_name),
+        was_locked: Gel::GodObject.locked?,
+        found_any: Gel::GodObject.find_gem(gem_name),
         requirements: Gel::Support::GemRequirement.new(version),
         why: nil,
       )

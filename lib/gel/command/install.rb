@@ -2,6 +2,6 @@
 
 class Gel::Command::Install < Gel::Command
   def run(command_line)
-    Gel::Environment.activate(install: true, output: $stderr)
+    Gel::GodObject.activate(install: true, output: $stderr)
   end
 end

@@ -72,11 +72,11 @@ def with_empty_cache
 end
 
 def with_empty_multi_store(fallbacks: false)
-  original_stores = Gel::Environment.root_store
+  original_stores = Gel::GodObject.root_store
 
   Dir.mktmpdir do |dir|
     stores = {}
-    Gel::Environment.store_set.each do |arch|
+    Gel::GodObject.store_set.each do |arch|
       subdir = File.join(dir, arch)
       Dir.mkdir subdir
       stores[arch] = Gel::Store.new(subdir)

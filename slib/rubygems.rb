@@ -46,7 +46,7 @@ module Gem
     end
 
     def self.find_by_name(name, *requirements)
-      if g = Gel::Environment.find_gem(name, *requirements)
+      if g = Gel::GodObject.find_gem(name, *requirements)
         new(g)
       else
         # TODO: Should probably be a Gel exception instead?
@@ -55,7 +55,7 @@ module Gem
     end
 
     def self.find_by_path(path)
-      if g = Gel::Environment.gem_for_path(path)
+      if g = Gel::GodObject.gem_for_path(path)
         new(g)
       end
     end
@@ -67,11 +67,11 @@ module Gem
     def self.latest_specs(prerelease = false)
       # In a locked environment this is fine. To work properly with an
       # unlocked store, we should be more selective.
-      Gel::Environment.store.each.map { |g| new(g) }
+      Gel::GodObject.store.each.map { |g| new(g) }
     end
 
     def self.each(&block)
-      Gel::Environment.store.each.map { |g| new(g) }.each(&block)
+      Gel::GodObject.store.each.map { |g| new(g) }.each(&block)
     end
 
     def initialize(*args, &definition)
@@ -131,7 +131,7 @@ module Gem
   end
 
   def self.try_activate(file)
-    Gel::Environment.resolve_gem_path(file) != file
+    Gel::GodObject.resolve_gem_path(file) != file
   rescue LoadError
     false
   end
@@ -150,14 +150,14 @@ module Gem
 
   def self.loaded_specs
     result = {}
-    Gel::Environment.activated_gems.each do |name, store_gem|
+    Gel::GodObject.activated_gems.each do |name, store_gem|
       result[name] = Gem::Specification.new(store_gem)
     end
     result
   end
 
   def self.find_files(pattern)
-    Gel::Environment.store.each.
+    Gel::GodObject.store.each.
       flat_map(&:require_paths).
       flat_map { |dir| Dir[Gel::Util.join(dir, pattern)] }
   end
@@ -171,11 +171,11 @@ module Gem
   end
 
   def self.dir
-    Gel::Environment.store.root
+    Gel::GodObject.store.root
   end
 
   def self.path
-    Gel::Environment.store.paths
+    Gel::GodObject.store.paths
   end
 
   def self.default_dir
@@ -187,7 +187,7 @@ module Gem
       # Extra-special case: this is the bundler binstub, we need to
       # re-exec to hand over.
 
-      ENV["RUBYLIB"] = Gel::Environment.original_rubylib
+      ENV["RUBYLIB"] = Gel::GodObject.original_rubylib
       exec RbConfig.ruby, "--", $0, *ARGV
     end
 
@@ -200,22 +200,22 @@ module Gem
       return File.expand_path("../exe/gel", __dir__)
     end
 
-    if g = Gel::Environment.activated_gems[gem_name]
-      Gel::Environment.gem g.name, version if version
-    elsif g = Gel::Environment.find_gem(gem_name, *version) do |gg|
+    if g = Gel::GodObject.activated_gems[gem_name]
+      Gel::GodObject.gem g.name, version if version
+    elsif g = Gel::GodObject.find_gem(gem_name, *version) do |gg|
         gg.executables.include?(bin_name)
       end
 
-      Gel::Environment.gem g.name, g.version
-    elsif g = Gel::Environment.find_gem(gem_name, *version)
+      Gel::GodObject.gem g.name, g.version
+    elsif g = Gel::GodObject.find_gem(gem_name, *version)
       raise "#{g.name} (#{g.version}) doesn't contain executable #{bin_name.inspect}"
-    elsif version && Gel::Environment.find_gem(gem_name)
+    elsif version && Gel::GodObject.find_gem(gem_name)
       raise "#{gem_name} (#{version}) not available"
     else
       raise "Unknown gem #{gem_name.inspect}"
     end
 
-    Gel::Environment.find_executable(bin_name, g.name, g.version)
+    Gel::GodObject.find_executable(bin_name, g.name, g.version)
   rescue => ex
     # This method may be our entry-point, if we're being invoked by a
     # rubygems binstub. Detect that situation, and provide nicer error
@@ -234,11 +234,11 @@ module Gem
   def self.bin_path(gem_name, bin_name, version = nil)
     if gem_name == "gel" && bin_name == "gel"
       return File.expand_path("../exe/gel", __dir__)
-    elsif g = Gel::Environment.activated_gems[gem_name]
-      Gel::Environment.gem g.name, version if version
+    elsif g = Gel::GodObject.activated_gems[gem_name]
+      Gel::GodObject.gem g.name, version if version
 
-      Gel::Environment.find_executable(bin_name, g.name, g.version)
-    elsif Gel::Environment.find_gem(gem_name)
+      Gel::GodObject.find_executable(bin_name, g.name, g.version)
+    elsif Gel::GodObject.find_gem(gem_name)
       raise "Gem #{gem_name.inspect} is not active"
     else
       raise "Unknown gem #{gem_name.inspect}"
@@ -247,7 +247,7 @@ module Gem
 end
 
 def gem(*args)
-  Gel::Environment.gem(*args)
+  Gel::GodObject.gem(*args)
 end
 private :gem
 
@@ -261,7 +261,7 @@ module Kernel
   if ENV["GEL_DEBUG"]
     def require(path)
       before = $".last
-      resolved = Gel::Environment.resolve_gem_path(path)
+      resolved = Gel::GodObject.resolve_gem_path(path)
       require_without_gel resolved
     ensure
       last_loaded = $".last
@@ -275,7 +275,7 @@ module Kernel
         # stdlib -- we should probably index these one day, but for
         # now, it's fine
         $stderr.puts "Gel: ruby stdlib found #{path.inspect} at #{last_loaded.inspect}"
-      elsif Gel::Environment.store.paths.any? { |path| last_loaded.start_with?(path) }
+      elsif Gel::GodObject.store.paths.any? { |path| last_loaded.start_with?(path) }
         # Inside one of our managed gems... ideally, that's never
         # supposed to happen
         $stderr.puts "Gel: ruby found #{path.inspect} at #{last_loaded.inspect}"
@@ -285,7 +285,7 @@ module Kernel
     end
   else
     def require(path)
-      require_without_gel Gel::Environment.resolve_gem_path(path)
+      require_without_gel Gel::GodObject.resolve_gem_path(path)
     end
   end
 

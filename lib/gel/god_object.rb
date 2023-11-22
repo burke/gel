@@ -5,7 +5,7 @@ require_relative "util"
 require_relative "stdlib"
 require_relative "support/gem_platform"
 
-class Gel::Environment
+class Gel::GodObject
   IGNORE_LIST = %w(bundler gel rubygems-update)
 
   class << self
@@ -123,7 +123,7 @@ class Gel::Environment
   end
 
   def self.with_store(store)
-    # Work around the fact Gel::Environment is a singleton: we really
+    # Work around the fact Gel::GodObject is a singleton: we really
     # want to treat the environment we're running in separately from the
     # application's environment we're working on. But for now, we can
     # just cheat and swap them. (This is clearly not at all thread-safe;
@@ -155,7 +155,7 @@ class Gel::Environment
     @git_depot ||= Gel::GitDepot.new(store)
   end
 
-  def self.solve_for_gemfile(store: store(), output: nil, gemfile: Gel::Environment.load_gemfile, lockfile: Gel::Environment.lockfile_name, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
+  def self.solve_for_gemfile(store: store(), output: nil, gemfile: Gel::GodObject.load_gemfile, lockfile: Gel::GodObject.lockfile_name, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
     output = nil if $DEBUG
 
     target_platforms = Array(platforms)
@@ -415,11 +415,11 @@ class Gel::Environment
   end
 
   def self.activate(fast: false, install: false, output: nil, error: true)
-    loaded = Gel::Environment.load_gemfile(error: error)
+    loaded = Gel::GodObject.load_gemfile(error: error)
     return if loaded.nil?
     return if @active_lockfile
 
-    lockfile = Gel::Environment.lockfile_name
+    lockfile = Gel::GodObject.lockfile_name
     if File.exist?(lockfile)
       resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: git_depot)
 
@@ -435,7 +435,7 @@ class Gel::Environment
 
     require_relative "../../slib/bundler"
 
-    locked_store = loader.activate(Gel::Environment, root_store, install: install, output: output)
+    locked_store = loader.activate(Gel::GodObject, root_store, install: install, output: output)
     open(locked_store)
   end
 
@@ -449,8 +449,8 @@ class Gel::Environment
     outdated_gem_set = nil
     load_error = nil
 
-    if loaded_gemfile = Gel::Environment.load_gemfile(error: false)
-      lockfile = Gel::Environment.lockfile_name
+    if loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
+      lockfile = Gel::GodObject.lockfile_name
       if File.exist?(lockfile)
         resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: git_depot)
 

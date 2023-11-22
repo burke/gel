@@ -9,19 +9,19 @@ class Gel::Command::Exec < Gel::Command
       raise Gel::Error::BrokenStubError.new(name: original_command)
     end
 
-    gemfile = Gel::Environment.find_gemfile(error: false)
+    gemfile = Gel::GodObject.find_gemfile(error: false)
 
     if gemfile && command_source != :gem
       ENV["GEL_GEMFILE"] = File.expand_path(gemfile)
-      ENV["GEL_LOCKFILE"] = File.expand_path(Gel::Environment.lockfile_name(gemfile))
+      ENV["GEL_LOCKFILE"] = File.expand_path(Gel::GodObject.lockfile_name(gemfile))
     end
 
-    ENV["RUBYLIB"] = Gel::Environment.modified_rubylib
+    ENV["RUBYLIB"] = Gel::GodObject.modified_rubylib
 
     if execute_inline?(expanded_command)
       if command_source == :path || command_source == :original
         if ENV["GEL_LOCKFILE"]
-          Gel::Environment.activate(output: $stderr)
+          Gel::GodObject.activate(output: $stderr)
         end
       end
 
@@ -42,8 +42,8 @@ class Gel::Command::Exec < Gel::Command
       return [File.expand_path(original_command), :path]
     end
 
-    if source = Gel::Environment.activate_for_executable([original_command])
-      if found = Gel::Environment.find_executable(original_command)
+    if source = Gel::GodObject.activate_for_executable([original_command])
+      if found = Gel::GodObject.find_executable(original_command)
         return [found, source]
       end
     end

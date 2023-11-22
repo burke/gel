@@ -10,7 +10,7 @@ class Gel::Command::InstallGem < Gel::Command
     Gel::WorkPool.new(2) do |work_pool|
       catalog = Gel::Catalog.new("https://rubygems.org", work_pool: work_pool)
 
-      Gel::Environment.install_gem([catalog], gem_name, gem_version, output: $stderr)
+      Gel::GodObject.install_gem([catalog], gem_name, gem_version, output: $stderr)
     end
   end
 end

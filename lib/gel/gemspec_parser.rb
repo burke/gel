@@ -74,7 +74,7 @@ class Gel::GemspecParser
       out_read, out_write = IO.pipe
 
       pid = spawn({
-                    "RUBYLIB" => Gel::Environment.modified_rubylib,
+                    "RUBYLIB" => Gel::GodObject.modified_rubylib,
                     "RUBYOPT" => "",
                     "GEL_DEBUG" => nil,
                     "GEL_GEMFILE" => "",

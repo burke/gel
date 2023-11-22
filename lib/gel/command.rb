@@ -12,8 +12,8 @@ class Gel::Command
         if Gel::Command.const_defined?(const, false)
           command = Gel::Command.const_get(const, false).new
           command.run(command_line)
-        elsif Gel::Environment.activate_for_executable(["gel-#{command_name}", command_name])
-          command_name = "gel-#{command_name}" if Gel::Environment.find_executable("gel-#{command_name}")
+        elsif Gel::GodObject.activate_for_executable(["gel-#{command_name}", command_name])
+          command_name = "gel-#{command_name}" if Gel::GodObject.find_executable("gel-#{command_name}")
           command = Gel::Command::Exec.new
           command.run([command_name, *command_line])
         else
@@ -80,13 +80,13 @@ class Gel::Command
   def self.own_stub_file?(path)
     # If it's our own stub file, we can skip reading and parsing it, and
     # just trust that the basename is correct.
-    if Gel::Environment.store.stub_set.own_stub?(path)
+    if Gel::GodObject.store.stub_set.own_stub?(path)
       File.basename(path)
     end
   end
 
   def self.other_stub_file?(path)
-    Gel::Environment.store.stub_set.parse_stub(path)
+    Gel::GodObject.store.stub_set.parse_stub(path)
   end
 
   def self.flags(arguments)

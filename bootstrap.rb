@@ -16,7 +16,7 @@ when "gemfile"
 
   # `gel install`
   loader = Gel::LockLoader.new(Gel::ResolvedGemSet.load("Gemfile.lock"), Gel::GemfileParser.parse(File.read("Gemfile"), "Gemfile", 1))
-  loader.activate(Gel::Environment, Gel::Environment.root_store, install: true, output: $stderr)
+  loader.activate(Gel::GodObject, Gel::GodObject.root_store, install: true, output: $stderr)
 
 else
   usage

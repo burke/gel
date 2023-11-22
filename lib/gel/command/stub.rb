@@ -3,7 +3,7 @@
 class Gel::Command::Stub < Gel::Command
   def run(command_line)
     if command_line.first == "--rebuild"
-      Gel::Environment.store.stub_set.rebuild!
+      Gel::GodObject.store.stub_set.rebuild!
       return
     end
 
@@ -48,7 +48,7 @@ class Gel::Command::Stub < Gel::Command
 
     # Okay, it seems plausible; in that case, it's time to check
     # properly.
-    stub_set = Gel::Environment.store.stub_set
+    stub_set = Gel::GodObject.store.stub_set
     stub_set.own_stub?(possible_stub_path) &&
       stub_set.parse_stub(possible_stub_path) == command
   end

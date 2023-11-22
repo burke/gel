@@ -6,6 +6,6 @@ class Gel::Command::Update < Gel::Command
     command_line = ["--major"] if command_line.empty?
 
     Gel::Command::Lock.new.run(command_line)
-    Gel::Environment.activate(install: true, output: $stderr)
+    Gel::GodObject.activate(install: true, output: $stderr)
   end
 end
