@@ -103,6 +103,30 @@ module Gel::GodObject::Stateless
       end
     end
 
+    def activate(active_lockfile, architectures, store, gemfile, fast: false, install: false, output: nil, error: true)
+      loaded = Gel::GodObject.load_gemfile(error: error)
+      return(active_lockfile) if loaded.nil?
+      return(active_lockfile) if active_lockfile
+
+      lockfile = Gel::GodObject.lockfile_name
+      if File.exist?(lockfile)
+        resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
+        resolved_gem_set = nil if !fast && lock_outdated?(loaded, resolved_gem_set)
+      end
+
+      return(active_lockfile) if fast && !resolved_gem_set
+
+      resolved_gem_set ||= write_lock(architectures, store, output: output, lockfile: lockfile)
+
+      loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
+
+      require_relative "../../../slib/bundler"
+
+      locked_store = loader.activate(Gel::GodObject, root_store(store), install: install, output: output)
+      Gel::GodObject.open(locked_store)
+      true # there is now an active lockfile
+    end
+
     def gem(store, activated_gems, name, *requirements, why: nil)
       return if Gel::GodObject::IGNORE_LIST.include?(name)
 
@@ -216,8 +240,6 @@ module Gel::GodObject::Stateless
     end
 
     def write_lock(architectures, store, output: nil, lockfile: lockfile_name, **args)
-      # TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-      # gem_set = Gel::GodObject.impl.send(:solve_for_gemfile, output: output, lockfile: lockfile, **args)
       gemfile = Gel::GodObject.load_gemfile
       gem_set = solve_for_gemfile(
         architectures: architectures,
@@ -261,6 +283,13 @@ module Gel::GodObject::Stateless
       Gel::GemfileParser.parse(content, path, 1)
     end
 
+    def activate_locked_gems(store, activated_gems, load_path)
+      if store.respond_to?(:locked_versions) && store.locked_versions
+        gems = store.gems(store.locked_versions)
+        activate_gems(store, activated_gems, load_path, gems.values)
+      end
+    end
+
     # private
 
     def gemfile_dependencies(gemfile:)
@@ -289,7 +318,7 @@ module Gel::GodObject::Stateless
       if lockfile && File.exist?(lockfile)
         require_relative "../resolved_gem_set"
         # TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.send(:git_depot))
+        gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
         target_platforms |= gem_set.platforms if gem_set.platforms
 
         strategy = preference_strategy&.call(gem_set)
@@ -348,8 +377,7 @@ module Gel::GodObject::Stateless
       end
 
       git_catalogs = git_sources.map do |remote, ref_type, ref|
-        # TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        git_depot = Gel::GodObject.impl.send(:git_depot)
+        git_depot = Gel::GodObject.impl.git_depot
         previous_git_catalogs[[remote, ref_type, ref]] || Gel::GitCatalog.new(git_depot, remote, ref_type, ref)
       end
 
@@ -701,7 +729,7 @@ module Gel::GodObject::Stateless
       if loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
         lockfile = Gel::GodObject.lockfile_name
         if File.exist?(lockfile)
-          resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.send(:git_depot))
+          resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
 
           if lock_outdated?(loaded_gemfile, resolved_gem_set)
             outdated_gem_set = resolved_gem_set

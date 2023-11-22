@@ -69,13 +69,14 @@ class Gel::GodObject
       @config ||= Gel::Config.new
     end
 
+    def git_depot
+      require_relative "git_depot"
+      @git_depot ||= Gel::GitDepot.new(@store)
+    end
+
     def open(store)
       @store = store
-
-      if @store.respond_to?(:locked_versions) && @store.locked_versions
-        gems = @store.gems(@store.locked_versions)
-        Stateless.activate_gems(@store, @activated_gems, $LOAD_PATH, gems.values)
-      end
+      Stateless.activate_locked_gems(@store, @activated_gems, $LOAD_PATH)
     end
 
     def load_gemfile(path = nil, error: true)
@@ -83,48 +84,8 @@ class Gel::GodObject
     end
 
     def activate(fast: false, install: false, output: nil, error: true)
-      loaded = Gel::GodObject.load_gemfile(error: error)
-      return if loaded.nil?
-      return if @active_lockfile
-
-      lockfile = Gel::GodObject.lockfile_name
-      if File.exist?(lockfile)
-        resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: git_depot)
-
-        resolved_gem_set = nil if !fast && Stateless.lock_outdated?(loaded, resolved_gem_set)
-      end
-
-      return if fast && !resolved_gem_set
-
-      resolved_gem_set ||= Stateless.write_lock(@architectures, @store, output: output, lockfile: lockfile)
-
-      @active_lockfile = true
-      loader = Gel::LockLoader.new(resolved_gem_set, @gemfile)
-
-      require_relative "../../slib/bundler"
-
-      locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
-      open(locked_store)
-    end
-
-    private
-
-    def git_depot
-      require_relative "git_depot"
-      @git_depot ||= Gel::GitDepot.new(@store)
-    end
-
-    def solve_for_gemfile(
-      store: @store, output: nil, gemfile: Gel::GodObject.load_gemfile,
-      lockfile: Gel::GodObject.lockfile_name, catalog_options: {},
-      solve: true, preference_strategy: nil, platforms: nil
-    )
-      Stateless.solve_for_gemfile(
-        architectures: @architectures,
-        store: store, output: output, gemfile: gemfile, lockfile: lockfile,
-        catalog_options: catalog_options, solve: solve,
-        preference_strategy: preference_strategy, platforms: platforms,
-      )
+      @active_lockfile ||= Stateless.activate(@active_lockfile, @architectures, @store, @gemfile, fast: fast, install: install, output: output, error: error)
+      nil
     end
   end
 end
