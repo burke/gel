@@ -10,14 +10,8 @@ class Gel::GodObject
 
     def initialize(store)
       @store = store
-      @active_lockfile = false
-      Stateless.activate_locked_gems(@store, &method(:activate_gems_now))
     end
 
-    def activate_gems_now(preparation, activation, lib_dirs)
-      @store.prepare(preparation)
-      Gel::LoadPathManager.activate(activation, lib_dirs)
-    end
   end
 end
 

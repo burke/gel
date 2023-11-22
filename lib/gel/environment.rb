@@ -5,6 +5,7 @@ require_relative "god_object"
 class Gel::Environment
   def initialize(store)
     @impl = Gel::GodObject::Impl.new(store)
+    Gel::GodObject::Stateless.activate_locked_gems(store, &method(:activate_gems_now))
   end
 
   # Just accessors for global state bits
@@ -35,14 +36,14 @@ class Gel::Environment
   # Significant mutations below
 
   def gem(name, *requirements, why: nil)
-    Gel::GodObject::Stateless.gem(@impl.__store, Gel::LoadPathManager.activated_gems, name, *requirements, why: why, &@impl.method(:activate_gems_now))
+    Gel::GodObject::Stateless.gem(@impl.__store, Gel::LoadPathManager.activated_gems, name, *requirements, why: why, &method(:activate_gems_now))
   end
 
   def activate(fast: false, install: false, output: nil, error: true)
     @active_lockfile ||= Gel::GodObject::Stateless.activate(@active_lockfile, load_gemfile(error: error), @impl.__store, @gemfile, fast: fast, output: output) do |loader|
       require_relative "../../slib/bundler"
       locked_store = loader.activate(Gel.environment, @impl.__store.root_store, install: install, output: output)
-      Gel::GodObject::Stateless.activate_locked_gems(locked_store, &@impl.method(:activate_gems_now))
+      Gel::GodObject::Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
     end
     nil
   end
@@ -50,29 +51,34 @@ class Gel::Environment
   def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
     Gel::GodObject::Stateless.install_gem(@impl.__store, catalogs, gem_name, requirements, output: output, solve: solve) do |loader|
       locked_store = loader.activate(Gel.environment, @impl.__store.root_store, install: true, output: output)
-      Gel::GodObject::Stateless.activate_locked_gems(locked_store, &@impl.method(:activate_gems_now))
+      Gel::GodObject::Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
     end
   end
 
   def resolve_gem_path(path)
-    Gel::GodObject::Stateless.resolve_gem_path(@impl.__store, Gel::LoadPathManager.activated_gems, path, &@impl.method(:activate_gems_now))
+    Gel::GodObject::Stateless.resolve_gem_path(@impl.__store, Gel::LoadPathManager.activated_gems, path, &method(:activate_gems_now))
   end
 
   def activate_for_executable(exes, install: false, output: nil)
     loaded_gemfile = load_gemfile(error: false)
-    Gel::GodObject::Stateless.activate_for_executable(loaded_gemfile, @impl.__store, Gel::LoadPathManager.activated_gems, @gemfile, exes, install: install, output: output, activate_gems_now: @impl.method(:activate_gems_now)) do |loader|
+    Gel::GodObject::Stateless.activate_for_executable(loaded_gemfile, @impl.__store, Gel::LoadPathManager.activated_gems, @gemfile, exes, install: install, output: output, activate_gems_now: method(:activate_gems_now)) do |loader|
       locked_store = loader.activate(Gel.environment, @impl.__store.root_store, install: install, output: output)
 
       ret = nil
       exes.each do |exe|
         if locked_store.each.any? { |g| g.executables.include?(exe) }
-          Gel::GodObject::Stateless.activate_locked_gems(locked_store, &@impl.method(:activate_gems_now))
+          Gel::GodObject::Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
           ret = :lock
           break
         end
       end
       ret
     end
+  end
+
+  def activate_gems_now(preparation, activation, lib_dirs)
+    @impl.__store.prepare(preparation)
+    Gel::LoadPathManager.activate(activation, lib_dirs)
   end
 
   private
