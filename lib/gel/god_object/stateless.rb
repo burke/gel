@@ -287,7 +287,149 @@ module Gel::GodObject::Stateless
       end
     end
 
-    # private
+    def activate_for_executable(store, gemfile, exes, install: false, output: nil)
+      loaded_gemfile = nil
+      resolved_gem_set = nil
+      outdated_gem_set = nil
+      load_error = nil
+
+      if loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
+        lockfile = lockfile_name(loaded_gemfile.filename)
+        if File.exist?(lockfile)
+          resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
+
+          if lock_outdated?(loaded_gemfile, resolved_gem_set)
+            outdated_gem_set = resolved_gem_set
+            resolved_gem_set = nil
+          end
+        end
+
+        if resolved_gem_set
+          loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
+
+          begin
+            locked_store = loader.activate(Gel::GodObject, root_store(store), install: install, output: output)
+
+            exes.each do |exe|
+              if locked_store.each.any? { |g| g.executables.include?(exe) }
+                Gel::GodObject.open(locked_store)
+                return :lock
+              end
+            end
+          rescue Gel::Error::MissingGemError => ex
+            load_error = ex
+          end
+        end
+      end
+
+      locked_gems =
+        if resolved_gem_set
+          resolved_gem_set.gem_names
+        elsif loaded_gemfile
+          loaded_gemfile.gem_names | (outdated_gem_set&.gem_names || [])
+        else
+          []
+        end
+
+      gemfile = nil
+      exes.each do |exe|
+        candidates = store.each.select { |g| g.executables.include?(exe) }
+
+        locked_candidates, unlocked_candidates =
+          candidates.partition { |g| locked_gems.include?(g.name) }
+
+        # If we failed to load the lockfile, but we've now found a candidate
+        # supplied by a locked gem, it's time to fail: we have to run locked
+        # gems in a locked environment, and we can't do that right now.
+        # The user probably needs to run `gel install`, which is what this
+        # error will tell them to do.
+        if locked_candidates.any?
+          if load_error
+            raise load_error
+          elsif outdated_gem_set
+            raise Gel::Error::OutdatedLockfileError
+          elsif resolved_gem_set.nil?
+            raise Gel::Error::NoLockfileError
+          else
+            # The lockfile was up-to-date and fully processed; we can
+            # continue and ignore the locked candidates. This could happen
+            # if non-locked versions of locked gems supply the executable.
+            # We could still succeed if an unlocked_candidate can fill in.
+          end
+        end
+
+        # Specific situation, but plausible enough to warrant a more
+        # helpful error: there's no ambiguity about who owns the
+        # executable name, but the one gem that supplies it is locked to a
+        # version that doesn't have it.
+        if unlocked_candidates.empty? && locked_candidates.map(&:name).uniq.size == 1
+          # We're going to describe the set of versions (that we know
+          # about) that would have supplied the executable.
+          valid_versions = locked_candidates.map(&:version).uniq.map { |v| Gel::Support::Version.new(v) }.sort
+          locked_version = Gel::Support::Version.new(resolved_gem_set.gems[locked_candidates.first.name].version)
+
+          # Most likely, our not-executable-having version is outside some
+          # contiguous range of executable-having versions, so let's check
+          # for that, because it'll give us a shorter error message.
+          #
+          # (Note we assume but don't prove that every version we know
+          # about within the range does have the executable. If that
+          # assumption is wrong, the user will get the full list after
+          # they retry with a bad in-range version.)
+          if valid_versions.first > locked_version || valid_versions.last < locked_version
+            valid_versions = valid_versions.first.to_s..valid_versions.last.to_s
+          elsif valid_versions.size == 1
+            valid_versions = valid_versions.first.to_s
+          else
+            valid_versions = valid_versions.map(&:to_s)
+          end
+
+          raise Gel::Error::MissingExecutableError.new(
+            executable: exe,
+            gem_name: locked_candidates.first.name,
+            gem_versions: valid_versions,
+            locked_gem_version: locked_version.to_s,
+          )
+        end
+
+        case candidates.size
+        when 0
+          nil
+        when 1
+          gem(candidates.first.name)
+          return :gem
+        else
+          # Multiple gems can supply this executable; do we have any
+          # useful way of deciding which one should win? One obvious
+          # tie-breaker: if a gem's name matches the executable, it wins.
+
+          if candidates.map(&:name).include?(exe)
+            gem(exe)
+          else
+            gem(candidates.first.name)
+          end
+
+          return :gem
+        end
+      end
+
+      nil
+    end
+
+    def gem_has_file?(store, activated_gems, gem_name, path)
+      search_name, search_ext = Gel::Util.split_filename_for_require(path)
+
+      store.gems_for_lib(search_name) do |gem, subdir, ext|
+        next unless Gel::Util.ext_matches_requested?(ext, search_ext)
+
+        if gem.name == gem_name && gem == activated_gems[gem_name]
+          return gem.path(path, subdir)
+        end
+      end
+
+      false
+    end
+    private
 
     def gemfile_dependencies(gemfile:)
       gemfile.gems.
@@ -314,7 +456,6 @@ module Gel::GodObject::Stateless
 
       if lockfile && File.exist?(lockfile)
         require_relative "../resolved_gem_set"
-        # TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
         target_platforms |= gem_set.platforms if gem_set.platforms
 
@@ -525,19 +666,6 @@ module Gel::GodObject::Stateless
       new_resolution
     end
 
-    def gem_has_file?(store, activated_gems, gem_name, path)
-      search_name, search_ext = Gel::Util.split_filename_for_require(path)
-
-      store.gems_for_lib(search_name) do |gem, subdir, ext|
-        next unless Gel::Util.ext_matches_requested?(ext, search_ext)
-
-        if gem.name == gem_name && gem == activated_gems[gem_name]
-          return gem.path(path, subdir)
-        end
-      end
-
-      false
-    end
 
     # Search gems and stdlib for how we should load the given +path+
     #
@@ -717,134 +845,6 @@ module Gel::GodObject::Stateless
       new_gems
     end
 
-    def activate_for_executable(store, gemfile, exes, install: false, output: nil)
-      loaded_gemfile = nil
-      resolved_gem_set = nil
-      outdated_gem_set = nil
-      load_error = nil
-
-      if loaded_gemfile = Gel::GodObject.load_gemfile(error: false)
-        lockfile = lockfile_name(loaded_gemfile.filename)
-        if File.exist?(lockfile)
-          resolved_gem_set = Gel::ResolvedGemSet.load(lockfile, git_depot: Gel::GodObject.impl.git_depot)
-
-          if lock_outdated?(loaded_gemfile, resolved_gem_set)
-            outdated_gem_set = resolved_gem_set
-            resolved_gem_set = nil
-          end
-        end
-
-        if resolved_gem_set
-          loader = Gel::LockLoader.new(resolved_gem_set, gemfile)
-
-          begin
-            locked_store = loader.activate(Gel::GodObject, root_store(store), install: install, output: output)
-
-            exes.each do |exe|
-              if locked_store.each.any? { |g| g.executables.include?(exe) }
-                Gel::GodObject.open(locked_store)
-                return :lock
-              end
-            end
-          rescue Gel::Error::MissingGemError => ex
-            load_error = ex
-          end
-        end
-      end
-
-      locked_gems =
-        if resolved_gem_set
-          resolved_gem_set.gem_names
-        elsif loaded_gemfile
-          loaded_gemfile.gem_names | (outdated_gem_set&.gem_names || [])
-        else
-          []
-        end
-
-      gemfile = nil
-      exes.each do |exe|
-        candidates = store.each.select { |g| g.executables.include?(exe) }
-
-        locked_candidates, unlocked_candidates =
-          candidates.partition { |g| locked_gems.include?(g.name) }
-
-        # If we failed to load the lockfile, but we've now found a candidate
-        # supplied by a locked gem, it's time to fail: we have to run locked
-        # gems in a locked environment, and we can't do that right now.
-        # The user probably needs to run `gel install`, which is what this
-        # error will tell them to do.
-        if locked_candidates.any?
-          if load_error
-            raise load_error
-          elsif outdated_gem_set
-            raise Gel::Error::OutdatedLockfileError
-          elsif resolved_gem_set.nil?
-            raise Gel::Error::NoLockfileError
-          else
-            # The lockfile was up-to-date and fully processed; we can
-            # continue and ignore the locked candidates. This could happen
-            # if non-locked versions of locked gems supply the executable.
-            # We could still succeed if an unlocked_candidate can fill in.
-          end
-        end
-
-        # Specific situation, but plausible enough to warrant a more
-        # helpful error: there's no ambiguity about who owns the
-        # executable name, but the one gem that supplies it is locked to a
-        # version that doesn't have it.
-        if unlocked_candidates.empty? && locked_candidates.map(&:name).uniq.size == 1
-          # We're going to describe the set of versions (that we know
-          # about) that would have supplied the executable.
-          valid_versions = locked_candidates.map(&:version).uniq.map { |v| Gel::Support::Version.new(v) }.sort
-          locked_version = Gel::Support::Version.new(resolved_gem_set.gems[locked_candidates.first.name].version)
-
-          # Most likely, our not-executable-having version is outside some
-          # contiguous range of executable-having versions, so let's check
-          # for that, because it'll give us a shorter error message.
-          #
-          # (Note we assume but don't prove that every version we know
-          # about within the range does have the executable. If that
-          # assumption is wrong, the user will get the full list after
-          # they retry with a bad in-range version.)
-          if valid_versions.first > locked_version || valid_versions.last < locked_version
-            valid_versions = valid_versions.first.to_s..valid_versions.last.to_s
-          elsif valid_versions.size == 1
-            valid_versions = valid_versions.first.to_s
-          else
-            valid_versions = valid_versions.map(&:to_s)
-          end
-
-          raise Gel::Error::MissingExecutableError.new(
-            executable: exe,
-            gem_name: locked_candidates.first.name,
-            gem_versions: valid_versions,
-            locked_gem_version: locked_version.to_s,
-          )
-        end
-
-        case candidates.size
-        when 0
-          nil
-        when 1
-          gem(candidates.first.name)
-          return :gem
-        else
-          # Multiple gems can supply this executable; do we have any
-          # useful way of deciding which one should win? One obvious
-          # tie-breaker: if a gem's name matches the executable, it wins.
-
-          if candidates.map(&:name).include?(exe)
-            gem(exe)
-          else
-            gem(candidates.first.name)
-          end
-
-          return :gem
-        end
-      end
-
-      nil
-    end
 
     def activate_gems(store, activated_gems, load_path, gems)
       lib_dirs = gems.flat_map(&:require_paths)
