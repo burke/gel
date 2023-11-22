@@ -4,7 +4,7 @@ require_relative "god_object"
 
 class Gel::Environment
   def initialize(store)
-    @impl = Gel::GodObject::Impl.instance
+    @impl = Gel::GodObject::Impl.new
     @impl.open(store)
   end
 
