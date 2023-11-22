@@ -126,7 +126,11 @@ module Gel::GodObject::Stateless
 
       if file
         if gem && resolved
-          activate_gems(store, activated_gems, $LOAD_PATH, resolved)
+          activate_gems(resolved) do |preparation, activation, lib_dirs|
+            store.prepare(preparation)
+            activated_gems.update(activation)
+            $LOAD_PATH.concat lib_dirs
+          end
         else
           unless resolved
             # This is a cheat: we're assuming the caller is about to require
@@ -204,10 +208,10 @@ module Gel::GodObject::Stateless
       Gel::GemfileParser.parse(content, path, 1)
     end
 
-    def activate_locked_gems(store, activated_gems, load_path)
+    def activate_locked_gems(store, &block)
       if store.respond_to?(:locked_versions) && store.locked_versions
         gems = store.gems(store.locked_versions)
-        activate_gems(store, activated_gems, load_path, gems.values)
+        activate_gems(gems.values, &block)
       end
     end
 
@@ -369,7 +373,11 @@ module Gel::GodObject::Stateless
         gem(store, activated_gems, dep, *reqs.map { |(qual, ver)| "#{qual} #{ver}" }, why: ["required by #{gem.name} #{gem.version}", *why])
       end
 
-      activate_gems(store, activated_gems, $LOAD_PATH, [gem])
+      activate_gems([gem]) do |preparation, activation, lib_dirs|
+        store.prepare(preparation)
+        activated_gems.update(activation)
+        $LOAD_PATH.concat lib_dirs
+      end
     end
 
     def lock_outdated?(gemfile, resolved_gem_set)
@@ -790,8 +798,7 @@ module Gel::GodObject::Stateless
       new_gems
     end
 
-
-    def activate_gems(store, activated_gems, load_path, gems)
+    def activate_gems(gems)
       lib_dirs = gems.flat_map(&:require_paths)
       preparation = {}
       activation = {}
@@ -801,10 +808,7 @@ module Gel::GodObject::Stateless
         activation[g.name] = g
       end
 
-      store.prepare(preparation)
-
-      activated_gems.update(activation)
-      load_path.concat lib_dirs
+      yield(preparation, activation, lib_dirs)
     end
   end
 end

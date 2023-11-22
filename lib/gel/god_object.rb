@@ -15,22 +15,27 @@ class Gel::GodObject
       impl.__set_gemfile(o)
     end
 
+    # Significant mutations
     def activate(fast: false, install: false, output: nil, error: true) = impl.activate(fast: fast, install: install, output: output, error: error)
     def activate_for_executable(exes, install: false, output: nil) = impl.activate_for_executable(exes, install: install, output: output)
+    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
+    def open(store) = impl.open(store)
+
+    # Just readers
     def activated_gems = impl.__activated_gems
+    def gemfile = impl.__gemfile
+    def store = impl.__store
+
+    # Read-only
+    def lockfile_name(gemfile = impl.__gemfile&.filename) = Stateless.lockfile_name(gemfile)
     def filtered_gems(gems = impl.__gemfile.gems) = Stateless.filtered_gems(gems)
     def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(impl.__store, exe, gem_name, gem_version)
     def find_gem(name, *requirements, &condition) = Stateless.find_gem(impl.__store, name, *requirements, &condition)
     def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
     def gem(name, *requirements, why: nil) = Stateless.gem(impl.__store, impl.__activated_gems, name, *requirements, why: why)
     def gem_for_path(path) = Stateless.gem_for_path(impl.__store, impl.__activated_gems, path)
-    def gemfile = impl.__gemfile
-    def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
     def locked? = Stateless.locked?(impl.__store)
-    def lockfile_name(gemfile = self.gemfile&.filename) = Stateless.lockfile_name(gemfile)
-    def open(store) = impl.open(store)
     def resolve_gem_path(path) = Stateless.resolve_gem_path(impl.__store, impl.__activated_gems, path)
-    def store = impl.__store
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.load_gemfile, impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
 
@@ -72,7 +77,11 @@ class Gel::GodObject
 
     def open(store)
       @store = store
-      Stateless.activate_locked_gems(@store, @activated_gems, $LOAD_PATH)
+      Stateless.activate_locked_gems(@store) do |preparation, activation, lib_dirs|
+        @store.prepare(preparation)
+        @activated_gems.update(activation)
+        $LOAD_PATH.concat lib_dirs
+      end
     end
 
     def load_gemfile(path = nil, error: true)
