@@ -21,6 +21,7 @@ class Gel::GodObject
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = impl.install_gem(catalogs, gem_name, requirements, output: output, solve: solve)
     def open(store) = impl.open(store)
     def gem(name, *requirements, why: nil) = impl.gem(name, *requirements, why: why)
+    def resolve_gem_path(path) = impl.resolve_gem_path(path)
 
     # Just readers
     def activated_gems = impl.__activated_gems
@@ -35,7 +36,6 @@ class Gel::GodObject
     def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
     def gem_for_path(path) = Stateless.gem_for_path(impl.__store, impl.__activated_gems, path)
     def locked? = Stateless.locked?(impl.__store)
-    def resolve_gem_path(path) = Stateless.resolve_gem_path(impl.__store, impl.__activated_gems, path)
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.load_gemfile, impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
 
@@ -73,6 +73,10 @@ class Gel::GodObject
 
     def config
       @config ||= Gel::Config.new
+    end
+
+    def resolve_gem_path(path)
+      Stateless.resolve_gem_path(@store, @activated_gems, path, &method(:activate_gems_now))
     end
 
     def gem(name, *requirements, why: nil)

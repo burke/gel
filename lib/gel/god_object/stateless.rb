@@ -119,18 +119,14 @@ module Gel::GodObject::Stateless
       gem
     end
 
-    def resolve_gem_path(store, activated_gems, path)
+    def resolve_gem_path(store, activated_gems, path, &block)
       path = path.to_s # might be e.g. a Pathname
 
       gem, file, resolved = scan_for_path(store, activated_gems, path)
 
       if file
         if gem && resolved
-          activate_gems(resolved) do |preparation, activation, lib_dirs|
-            store.prepare(preparation)
-            activated_gems.update(activation)
-            $LOAD_PATH.concat lib_dirs
-          end
+          activate_gems(resolved, &block)
         else
           unless resolved
             # This is a cheat: we're assuming the caller is about to require
