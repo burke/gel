@@ -4,16 +4,13 @@ require "rbconfig"
 require_relative "util"
 require_relative "stdlib"
 require_relative "support/gem_platform"
+require_relative "load_path_manager"
 
 class Gel::GodObject
   IGNORE_LIST = %w(bundler gel rubygems-update)
 
   class << self
     def impl = Impl.instance
-
-    def gemfile=(o)
-      impl.__set_gemfile(o)
-    end
 
     # Significant mutations
     def activate(fast: false, install: false, output: nil, error: true) = impl.activate(fast: fast, install: install, output: output, error: error)
@@ -23,10 +20,13 @@ class Gel::GodObject
     def gem(name, *requirements, why: nil) = impl.gem(name, *requirements, why: why)
     def resolve_gem_path(path) = impl.resolve_gem_path(path)
 
-    # Just readers
-    def activated_gems = impl.__activated_gems
+    # Just accessors for global state bits
     def gemfile = impl.__gemfile
     def store = impl.__store
+    def config = impl.config # Not related to or used by anything else here.
+    def gemfile=(o)
+      impl.__set_gemfile(o)
+    end
 
     # Read-only
     def lockfile_name(gemfile = impl.__gemfile&.filename) = Stateless.lockfile_name(gemfile)
@@ -34,21 +34,18 @@ class Gel::GodObject
     def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(impl.__store, exe, gem_name, gem_version)
     def find_gem(name, *requirements, &condition) = Stateless.find_gem(impl.__store, name, *requirements, &condition)
     def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
-    def gem_for_path(path) = Stateless.gem_for_path(impl.__store, impl.__activated_gems, path)
+    def gem_for_path(path) = Stateless.gem_for_path(impl.__store, Gel::LoadPathManager.activated_gems, path)
     def locked? = Stateless.locked?(impl.__store)
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.load_gemfile, impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
-
-    # Not related to anything else; just global state.
-    def config = impl.config
 
     # Just utility methods; no relationship to this really. Also could be named better...
     def modified_rubylib = Stateless.modified_rubylib # rubylib_with_gel
     def original_rubylib = Stateless.original_rubylib # rubylib_without_gel
 
     # Exclusively used by GemfileParser#autorequire
-    def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, impl.__activated_gems, gem_name, path)
-    def scoped_require(gem_name, path) = Stateless.scoped_require(impl.__store, impl.__activated_gems, gem_name, path)
+    def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, Gel::LoadPathManager.activated_gems, gem_name, path)
+    def scoped_require(gem_name, path) = Stateless.scoped_require(impl.__store, Gel::LoadPathManager.activated_gems, gem_name, path)
   end
 
   class Impl
@@ -57,7 +54,6 @@ class Gel::GodObject
     end
     def __gemfile = @gemfile
     def __store = @store
-    def __activated_gems = @activated_gems
 
     private_class_method :new
     def self.instance
@@ -66,7 +62,6 @@ class Gel::GodObject
 
     def initialize
       @config = nil
-      @activated_gems = {}
       @gemfile = nil
       @active_lockfile = false
     end
@@ -76,11 +71,11 @@ class Gel::GodObject
     end
 
     def resolve_gem_path(path)
-      Stateless.resolve_gem_path(@store, @activated_gems, path, &method(:activate_gems_now))
+      Stateless.resolve_gem_path(@store, Gel::LoadPathManager.activated_gems, path, &method(:activate_gems_now))
     end
 
     def gem(name, *requirements, why: nil)
-      Stateless.gem(@store, @activated_gems, name, *requirements, why: why, &method(:activate_gems_now))
+      Stateless.gem(@store, Gel::LoadPathManager.activated_gems, name, *requirements, why: why, &method(:activate_gems_now))
     end
 
     def open(store)
@@ -110,13 +105,12 @@ class Gel::GodObject
 
     def activate_gems_now(preparation, activation, lib_dirs)
       @store.prepare(preparation)
-      @activated_gems.update(activation)
-      $LOAD_PATH.concat lib_dirs
+      Gel::LoadPathManager.activate(activation, lib_dirs)
     end
 
     def activate_for_executable(exes, install: false, output: nil)
       loaded_gemfile = load_gemfile(error: false)
-      Stateless.activate_for_executable(loaded_gemfile, @store, @activated_gems, @gemfile, exes, install: install, output: output, activate_gems_now: method(:activate_gems_now)) do |loader|
+      Stateless.activate_for_executable(loaded_gemfile, @store, Gel::LoadPathManager.activated_gems, @gemfile, exes, install: install, output: output, activate_gems_now: method(:activate_gems_now)) do |loader|
         locked_store = loader.activate(Gel::GodObject, @store.root_store, install: install, output: output)
 
         ret = nil
