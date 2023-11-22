@@ -21,7 +21,7 @@ class Gel::GodObject
     def config = impl.config
     def filtered_gems(gems = impl.__gemfile.gems) = Stateless.filtered_gems(gems)
     def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(impl.__store, exe, gem_name, gem_version)
-    def find_gem(name, *requirements, &condition) = impl.find_gem(name, *requirements, &condition)
+    def find_gem(name, *requirements, &condition) = Stateless.find_gem(impl.__store, name, *requirements, &condition)
     def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
     def gem(name, *requirements, why: nil) = impl.gem(name, *requirements, why: why)
     def gem_for_path(path) = impl.gem_for_path(path)
@@ -36,10 +36,11 @@ class Gel::GodObject
     def original_rubylib = Stateless.original_rubylib
     def resolve_gem_path(path) = impl.resolve_gem_path(path)
     def root_store(store = store()) = Stateless.root_store(store)
-    def scoped_require(gem_name, path) = impl.scoped_require(gem_name, path)
+    def scoped_require(gem_name, path) = Stateless.scoped_require(impl.__store, impl.__activated_gems, gem_name, path)
     def store = impl.__store
     def store_set = Stateless.store_set(impl.__architectures)
     def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(output: output, lockfile: lockfile, **args)
+    def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
   end
 
   class Impl
@@ -112,15 +113,6 @@ class Gel::GodObject
       open(locked_store)
     end
 
-
-    def find_gem(name, *requirements, &condition)
-      requirements = Gel::Support::GemRequirement.new(requirements)
-
-      @store.each(name).find do |g|
-        g.satisfies?(requirements) && (!condition || condition.call(g))
-      end
-    end
-
     def gem(name, *requirements, why: nil)
       return if IGNORE_LIST.include?(name)
 
@@ -155,14 +147,6 @@ class Gel::GodObject
           requirements: requirements,
           why: why,
         )
-      end
-    end
-
-    def scoped_require(gem_name, path)
-      if full_path = Stateless.gem_has_file?(@store, @activated_gems, gem_name, path)
-        require full_path
-      else
-        raise ::LoadError, "No file #{path.inspect} found in gem #{gem_name.inspect}"
       end
     end
 
@@ -237,14 +221,6 @@ class Gel::GodObject
     def git_depot
       require_relative "git_depot"
       @git_depot ||= Gel::GitDepot.new(@store)
-    end
-
-    def require_groups(*groups)
-      gems = Stateless.filtered_gems(@gemfile.gems)
-      groups = [:default] if groups.empty?
-      groups = groups.map(&:to_s)
-      gems = gems.reject { |g| ((g[2][:group] || [:default]).map(&:to_s) & groups).empty? }
-      @gemfile.autorequire(Gel::GodObject, gems)
     end
 
     def solve_for_gemfile(

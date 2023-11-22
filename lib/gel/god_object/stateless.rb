@@ -103,6 +103,31 @@ module Gel::GodObject::Stateless
       end
     end
 
+    def scoped_require(store, activated_gems, gem_name, path)
+      if full_path = gem_has_file?(store, activated_gems, gem_name, path)
+        require full_path
+      else
+        raise ::LoadError, "No file #{path.inspect} found in gem #{gem_name.inspect}"
+      end
+    end
+
+    def find_gem(store, name, *requirements, &condition)
+      requirements = Gel::Support::GemRequirement.new(requirements)
+
+      store.each(name).find do |g|
+        g.satisfies?(requirements) && (!condition || condition.call(g))
+      end
+    end
+
+    # NOTE: untested
+    def require_groups(gemfile, *groups)
+      gems = filtered_gems(gemfile.gems)
+      groups = [:default] if groups.empty?
+      groups = groups.map(&:to_s)
+      gems = gems.reject { |g| ((g[2][:group] || [:default]).map(&:to_s) & groups).empty? }
+      gemfile.autorequire(Gel::GodObject, gems)
+    end
+
     def write_lock(output: nil, lockfile: lockfile_name, **args)
       # TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       gem_set = Gel::GodObject.impl.send(:solve_for_gemfile, output: output, lockfile: lockfile, **args)
