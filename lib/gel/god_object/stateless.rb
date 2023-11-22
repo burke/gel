@@ -217,7 +217,13 @@ module Gel::GodObject::Stateless
 
     def write_lock(architectures, store, output: nil, lockfile: lockfile_name, **args)
       # TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-      gem_set = Gel::GodObject.impl.send(:solve_for_gemfile, output: output, lockfile: lockfile, **args)
+      # gem_set = Gel::GodObject.impl.send(:solve_for_gemfile, output: output, lockfile: lockfile, **args)
+      gemfile = Gel::GodObject.load_gemfile
+      gem_set = solve_for_gemfile(
+        architectures: architectures,
+        store: store, output: output, gemfile: gemfile, lockfile: lockfile,
+        **args
+      )
 
       if lockfile
         output.puts "Writing lockfile to #{File.expand_path(lockfile)}" if output
