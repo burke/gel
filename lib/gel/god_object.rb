@@ -39,7 +39,7 @@ class Gel::GodObject
     def scoped_require(gem_name, path) = Stateless.scoped_require(impl.__store, impl.__activated_gems, gem_name, path)
     def store = impl.__store
     def store_set = Stateless.store_set(impl.__architectures)
-    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(output: output, lockfile: lockfile, **args)
+    def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(impl.__architectures, impl.__store, output: output, lockfile: lockfile, **args)
     def require_groups(*groups) = Stateless.require_groups(impl.__gemfile, *groups)
   end
 
@@ -96,7 +96,7 @@ class Gel::GodObject
 
       return if fast && !resolved_gem_set
 
-      resolved_gem_set ||= Stateless.write_lock(output: output, lockfile: lockfile)
+      resolved_gem_set ||= Stateless.write_lock(@architectures, @store, output: output, lockfile: lockfile)
 
       @active_lockfile = true
       loader = Gel::LockLoader.new(resolved_gem_set, @gemfile)

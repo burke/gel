@@ -215,7 +215,7 @@ module Gel::GodObject::Stateless
       gemfile.autorequire(Gel::GodObject, gems)
     end
 
-    def write_lock(output: nil, lockfile: lockfile_name, **args)
+    def write_lock(architectures, store, output: nil, lockfile: lockfile_name, **args)
       # TODO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       gem_set = Gel::GodObject.impl.send(:solve_for_gemfile, output: output, lockfile: lockfile, **args)
 
