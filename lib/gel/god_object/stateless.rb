@@ -140,6 +140,11 @@ module Gel::GodObject::Stateless
       end
     end
 
+    def gem_for_path(store, activated_gems, path)
+      gem, _file, _resolved = scan_for_path(store, activated_gems, path)
+      gem
+    end
+
     def activate_gem(store, activated_gems, gem, why: nil)
       raise gem.version.class.name unless gem.version.class == String
       if activated_gems[gem.name]

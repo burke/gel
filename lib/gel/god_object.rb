@@ -24,7 +24,7 @@ class Gel::GodObject
     def find_gem(name, *requirements, &condition) = Stateless.find_gem(impl.__store, name, *requirements, &condition)
     def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(impl.__gemfile, path, error: error)
     def gem(name, *requirements, why: nil) = Stateless.gem(impl.__store, impl.__activated_gems, name, *requirements, why: why)
-    def gem_for_path(path) = impl.gem_for_path(path)
+    def gem_for_path(path) = Stateless.gem_for_path(impl.__store, impl.__activated_gems, path)
     def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(impl.__store, impl.__activated_gems, gem_name, path)
     def gemfile = impl.__gemfile
     def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true) = Stateless.install_gem(impl.__architectures, impl.__store, catalogs, gem_name, requirements, output: output, solve: solve)
@@ -111,12 +111,6 @@ class Gel::GodObject
 
       locked_store = loader.activate(Gel::GodObject, Stateless.root_store(@store), install: install, output: output)
       open(locked_store)
-    end
-
-
-    def gem_for_path(path)
-      gem, _file, _resolved = Stateless.scan_for_path(@store, @activated_gems, path)
-      gem
     end
 
     def resolve_gem_path(path)
