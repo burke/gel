@@ -28,12 +28,12 @@ class Gel::Environment
   def find_executable(exe, gem_name = nil, gem_version = nil) = Stateless.find_executable(@store, exe, gem_name, gem_version)
   def find_gem(name, *requirements, &condition) = Stateless.find_gem(@store, name, *requirements, &condition)
   def find_gemfile(path = nil, error: true) = Stateless.find_gemfile(@gemfile, path, error: error)
-  def gem_for_path(path) = Stateless.gem_for_path(@store, Gel::LoadPathManager.activated_gems, path)
   def locked? = Stateless.locked?(@store)
   def write_lock(output: nil, lockfile: lockfile_name, **args) = Stateless.write_lock(load_gemfile, @store, output: output, lockfile: lockfile, **args)
   # gem_has_file? and scoped_require exclusively used by GemfileParser#autorequire
   def gem_has_file?(gem_name, path) = Stateless.gem_has_file?(@store, Gel::LoadPathManager.activated_gems, gem_name, path)
-  # requires are obviously side effects.. how can we flag these clearly?
+
+  def gem_for_path(path) = Gel::PathResolver.resolve(@store, Gel::LoadPathManager.activated_gems, path)
 
   # Significant mutations below
 
