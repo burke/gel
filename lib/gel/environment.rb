@@ -59,7 +59,6 @@ class Gel::Environment
       require_relative "../../slib/bundler"
       locked_store = loader.activate(self, @store.root_store, install: install, output: output)
       reopen(locked_store)
-      Activation.activate_locked_gems(locked_store, &method(:activate_gems_now))
     end
     nil
   end
