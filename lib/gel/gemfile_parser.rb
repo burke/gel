@@ -224,6 +224,24 @@ module Gel::GemfileParser
       end
     end
 
+    def dependencies
+      gems.
+        group_by { |name, _constraints, _options| name }.
+        map do |name, list|
+
+        constraints = list.flat_map { |_, c, _| c }.compact
+
+        if constraints == []
+          name
+        else
+          r = Gel::Support::GemRequirement.new(constraints)
+          req_strings = r.requirements.sort_by { |(_op, ver)| [ver, ver.segments] }.map { |(op, ver)| "#{op} #{ver}" }
+
+          "#{name} (#{req_strings.join(", ")})"
+        end
+      end.sort
+    end
+
     def gem_names
       @gems.map(&:first).flatten.map(&:to_s)
     end

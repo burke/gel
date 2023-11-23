@@ -207,7 +207,7 @@ module Gel::GemSetSolver
             )
           end
       end
-      new_resolution.dependencies = gemfile_dependencies(gemfile: gemfile)
+      new_resolution.dependencies = gemfile.dependencies
 
       if possible_inferred_targets
         # Infer the least specific platform that selects all of the resolved
@@ -220,25 +220,6 @@ module Gel::GemSetSolver
       new_resolution.bundler_version = gem_set&.bundler_version
       new_resolution.ruby_version = RUBY_DESCRIPTION.split.first(2).join(" ") if gem_set&.ruby_version
       new_resolution
-    end
-
-    # TODO: duplicate method
-    def gemfile_dependencies(gemfile:)
-      gemfile.gems.
-        group_by { |name, _constraints, _options| name }.
-        map do |name, list|
-
-        constraints = list.flat_map { |_, c, _| c }.compact
-
-        if constraints == []
-          name
-        else
-          r = Gel::Support::GemRequirement.new(constraints)
-          req_strings = r.requirements.sort_by { |(_op, ver)| [ver, ver.segments] }.map { |(op, ver)| "#{op} #{ver}" }
-
-          "#{name} (#{req_strings.join(", ")})"
-        end
-      end.sort
     end
   end
 end

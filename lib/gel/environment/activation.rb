@@ -16,7 +16,6 @@ require_relative "../gem_set_solver"
 # a temporary home for this code while I pick it apart a bit more.
 module Gel::Environment::Activation
   class << self
-    # Duplicate in stateless
     def lockfile_name(gemfile)
       ENV["GEL_LOCKFILE"] || (gemfile && gemfile + ".lock") || "Gemfile.lock"
     end
@@ -285,26 +284,7 @@ module Gel::Environment::Activation
     end
 
     def lock_outdated?(gemfile, resolved_gem_set)
-      gemfile_dependencies(gemfile: gemfile) != resolved_gem_set.dependencies
-    end
-
-    # TODO: duplicate method in gem_set_solver
-    def gemfile_dependencies(gemfile:)
-      gemfile.gems.
-        group_by { |name, _constraints, _options| name }.
-        map do |name, list|
-
-        constraints = list.flat_map { |_, c, _| c }.compact
-
-        if constraints == []
-          name
-        else
-          r = Gel::Support::GemRequirement.new(constraints)
-          req_strings = r.requirements.sort_by { |(_op, ver)| [ver, ver.segments] }.map { |(op, ver)| "#{op} #{ver}" }
-
-          "#{name} (#{req_strings.join(", ")})"
-        end
-      end.sort
+      gemfile.dependencies != resolved_gem_set.dependencies
     end
 
     def activate_gems(gems)
