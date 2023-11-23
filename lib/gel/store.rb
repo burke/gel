@@ -19,6 +19,10 @@ class Gel::Store
     self
   end
 
+  def locked?
+    false
+  end
+
   def marshal_dump
     @root
   end

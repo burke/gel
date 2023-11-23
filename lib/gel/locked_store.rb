@@ -23,6 +23,10 @@ class Gel::LockedStore
     end
   end
 
+  def locked?
+    true
+  end
+
   def stub_set
     @inner.stub_set
   end
@@ -74,7 +78,7 @@ class Gel::LockedStore
     @full_cache = true
   end
 
-  def locked?(gem)
+  def gem_locked?(gem)
     !@locked_versions || @locked_versions[gem.name] == gem.version
   end
 
@@ -106,7 +110,7 @@ class Gel::LockedStore
 
       unless @full_cache
         @inner.gems_for_lib(search_name) do |gem, subdir, ext|
-          if locked?(gem)
+          if gem_locked?(gem)
             hits << [gem, subdir, ext]
           end
         end
@@ -134,7 +138,7 @@ class Gel::LockedStore
     list = locked_gems
 
     @inner.each(gem_name) do |gem|
-      next unless locked?(gem)
+      next unless gem_locked?(gem)
       yield gem
       list.delete gem
     end
