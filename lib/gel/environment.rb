@@ -57,6 +57,8 @@ class Gel::Environment
     @active_lockfile ||= Stateless.activate(@active_lockfile, load_gemfile(error: error), @store, @gemfile, fast: fast, output: output) do |loader|
       require_relative "../../slib/bundler"
       locked_store = loader.activate(self, @store.root_store, install: install, output: output)
+      reopen(locked_store)
+      @store = locked_store # FIX?
       Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
     end
     nil
@@ -65,7 +67,7 @@ class Gel::Environment
   def install_gem(catalogs, gem_name, requirements = nil, output: nil, solve: true)
     Stateless.install_gem(@store, catalogs, gem_name, requirements, output: output, solve: solve) do |loader|
       locked_store = loader.activate(self, @store.root_store, install: true, output: output)
-      Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
+      reopen(locked_store)
     end
   end
 
@@ -81,7 +83,7 @@ class Gel::Environment
       ret = nil
       exes.each do |exe|
         if locked_store.each.any? { |g| g.executables.include?(exe) }
-          Stateless.activate_locked_gems(locked_store, &method(:activate_gems_now))
+          reopen(locked_store)
           ret = :lock
           break
         end
@@ -96,6 +98,11 @@ class Gel::Environment
   end
 
   private
+
+  def reopen(store)
+    @store = store
+    Stateless.activate_locked_gems(store, &method(:activate_gems_now))
+  end
 
   def load_gemfile(path = nil, error: true)
     @gemfile ||= Stateless.load_gemfile(@gemfile, path, error: error)
