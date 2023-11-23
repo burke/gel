@@ -5,6 +5,9 @@ require_relative "support/gem_platform"
 
 module Gel::GemSetSolver
   class << self
+    # Given a gemfile (and optionally a lockfile), produce a ResolvedGemSet
+    # that satisfies the gemfile's requirements. This is where the real
+    # solver (PubGrub) is called, if necessary.
     def solve_for_gemfile(store:, output:, gemfile:, lockfile:, catalog_options: {}, solve: true, preference_strategy: nil, platforms: nil)
       output = nil if $DEBUG
 

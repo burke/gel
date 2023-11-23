@@ -8,21 +8,15 @@ require_relative "../stdlib"
 require_relative "../path_resolver"
 require_relative "../gem_set_solver"
 
-# This module contains a bunch of behaviour for Gel.environment.
-# Some of it is pretty thorny and could use a reafactor, but what is here
-# notably doesn't mutate any state on the Gel.environment except through callbacks.
-#
-# This is a transitional state: Environment needs to be split up a bit and this is
-# a temporary home for this code while I pick it apart a bit more.
 module Gel::Environment::Activation
   class << self
     def lockfile_name(gemfile)
       ENV["GEL_LOCKFILE"] || (gemfile && gemfile + ".lock") || "Gemfile.lock"
     end
 
-    def activate(active_lockfile, loaded_gemfile, store, active_gemfile, fast: false, output: nil)
-      return(active_lockfile) if loaded_gemfile.nil?
-      return(active_lockfile) if active_lockfile
+    def activate(already_active_lockfile, loaded_gemfile, store, active_gemfile, fast: false, output: nil)
+      return(already_active_lockfile) if loaded_gemfile.nil?
+      return(true) if already_active_lockfile
 
       lockfile = lockfile_name(loaded_gemfile.filename)
       if File.exist?(lockfile)
@@ -30,7 +24,7 @@ module Gel::Environment::Activation
         resolved_gem_set = nil if !fast && lock_outdated?(loaded_gemfile, resolved_gem_set)
       end
 
-      return(active_lockfile) if fast && !resolved_gem_set
+      return(already_active_lockfile) if fast && !resolved_gem_set
 
       resolved_gem_set ||= write_lock(loaded_gemfile, store, output: output, lockfile: lockfile)
 
@@ -115,6 +109,7 @@ module Gel::Environment::Activation
       path
     end
 
+    # TODO: catalogs is unused because we hardcode rubygems.org.
     def install_gem(store, catalogs, gem_name, requirements = nil, output: nil, solve: true)
       gemfile = Gel::GemfileParser.inline do
         source "https://rubygems.org"
