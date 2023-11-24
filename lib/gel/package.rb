@@ -137,28 +137,48 @@ module Gel
       end
     end
 
-    def self.verify_checksum(dir, filename, checksums)
-      checked = false
-      checksums.each do |type, map|
-        if (expected_sum = map[filename])
-          algo = case type
-          when "SHA1"
-            "1"
-          when "SHA512"
-            "512"
-          else
-            next
+    # def self.verify_checksum(dir, filename, checksums)
+    #   # Sometimes there are multiple checksums for a single file.
+    #   # This feature only exists to mitigate corrupted gems, not for
+    #   # security -- really it should have been a CRC32.
+    #   # Anyway, in light of that, we try the faster algorithm first and
+    #   # return before checking the slower of the two, if the first was present.
+    #   {'SHA1' => '-sha1', 'SHA512' => '-sha512'}.each do |rubygems_algo, openssl_algo|
+    #     if (expected_sum = checksums[rubygems_algo]&.[](filename))
+    #       # Note: shasum on macOS burns about 23ms in setup time for nothing.
+    #       # Openssl is much faster.
+    #       out, err, stat = Open3.capture3("openssl", "dgst", "-r", openssl_algo, File.join(dir, filename))
+    #       raise "openssl dgst failed: #{err}" unless stat.success?
+    #       found_sum, _ = out.split(/\s+/, 2)
+    #       raise "#{type} checksum mismatch on #{filename}" unless found_sum == expected_sum
+    #       return
+    #     end
+    #   end
+    # end
+
+    def self.verify_checksums(dir, checksums)
+      processes = []
+
+      %w(metadata.gz data.tar.gz).each do |filename|
+        {'SHA1' => '-sha1', 'SHA512' => '-sha512'}.each do |rubygems_algo, openssl_algo|
+          if (expected_sum = checksums[rubygems_algo]&.[](filename))
+            stdin, stdout, stderr, wait_thr = Open3.popen3("openssl", "dgst", "-r", openssl_algo, File.join(dir, filename))
+            stdin.close
+            processes << { out: stdout, err: stderr, wait_thr: wait_thr, expected_sum: expected_sum }
+            break # no need to verify more than one for each file
           end
-          out, err, stat = Open3.capture3("shasum", "-a", algo, File.join(dir, filename))
-          raise "shasum failed: #{err}" unless stat.success?
-          found_sum, _ = out.split(/\s+/, 2)
-          raise "#{type} checksum mismatch on #{filename}" unless found_sum == expected_sum
-          checked = true
         end
       end
 
-      unless checked
-        raise "no checksum for #{filename}"
+      processes.each do |process|
+        out = process[:out].read
+        process[:out].close
+        err = process[:err].read
+        process[:err].close
+        raise "openssl dgst failed for #{filename}: #{err}" unless process[:wait_thr].value.success?
+
+        found_sum, _ = out.split(/\s+/, 2)
+        raise "checksum mismatch on #{filename}" unless found_sum.strip == process[:expected_sum]
       end
     end
 
@@ -188,10 +208,7 @@ module Gel
             ::YAML.safe_load(yaml, filename: "#{filename}:checksums.yaml.gz")
           end
 
-          # probably better to just verify whatever checksums exist.
-          # And probably error on algorithms we don't know?
-          verify_checksum(dir, "metadata.gz", sums)
-          verify_checksum(dir, "data.tar.gz", sums)
+          verify_checksums(dir, sums)
           # We could also verify signatures. I guess.
         end
 
