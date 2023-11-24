@@ -314,17 +314,14 @@ class Gel::Package::Installer
       files.each do |short|
         full = File.join(dir, short)
         stat = File.stat(full)
-        if stat.directory? && stat.mode != 0755
+        if stat.directory? && (stat.mode & 0777 != 0755)
           File.chmod(0755, full)
         else
           source_mode = stat.mode & 0777
           mode = 0444
           mode |= source_mode & 0200
           mode |= 0111 if source_mode & 0111 != 0
-          if (exe = executable[short])
-            mode |= 0111
-            # Wrong: not final location yet
-          end
+          mode |= 0111 if executable[short]
           File.chmod(mode, full)
         end
       end

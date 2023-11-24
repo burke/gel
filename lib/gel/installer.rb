@@ -14,6 +14,7 @@ class Gel::Installer
 
   DOWNLOAD_CONCURRENCY = 12
   COMPILE_CONCURRENCY = 6
+  INSTALL_CONCURRENCY = 6
 
   include MonitorMixin
 
@@ -33,9 +34,11 @@ class Gel::Installer
 
     @download_pool = Gel::WorkPool.new(DOWNLOAD_CONCURRENCY, monitor: self, name: "gel-download", collect_errors: true)
     @compile_pool = Gel::WorkPool.new(COMPILE_CONCURRENCY, monitor: self, name: "gel-compile", collect_errors: true)
+    @install_pool = Gel::WorkPool.new(INSTALL_CONCURRENCY, monitor: self, name: "gel-compile", collect_errors: true)
 
     @download_pool.queue_order = -> ((_, name)) { -@weights[name] }
     @compile_pool.queue_order = -> ((_, name)) { -@weights[name] }
+    @install_pool.queue_order = -> ((_, name)) { -@weights[name] }
 
     @git_depot = Gel::GitDepot.new(store)
 
@@ -59,6 +62,7 @@ class Gel::Installer
       # queues to ensure the most depended-on gems are processed first.
       # This ensures we can start compiling extension gems as soon as
       # possible.
+      @install_pool.reorder_queue!
       @download_pool.reorder_queue!
       @compile_pool.reorder_queue!
     end
@@ -109,7 +113,9 @@ class Gel::Installer
           end
         end
       else
-        work_install(g)
+        @install_pool.queue(g.spec.name) do
+          work_install(g)
+        end
       end
     else
       clear_pending(name)
@@ -144,7 +150,9 @@ class Gel::Installer
         end
       end
     else
-      work_install(g)
+      @install_pool.queue(g.spec.name) do
+        work_install(g)
+      end
     end
   end
 
@@ -195,7 +203,7 @@ class Gel::Installer
     clear = ""
     tty = output && output.isatty
 
-    pools = { "Downloading" => @download_pool, "Compiling" => @compile_pool }
+    pools = { "Downloading" => @download_pool, "Compiling" => @compile_pool, "Installing" => @install_pool }
 
     return if pools.values.all?(&:idle?)
 
@@ -232,7 +240,7 @@ class Gel::Installer
       end
     end.each(&:join)
 
-    errors = @download_pool.errors + @compile_pool.errors
+    errors = @download_pool.errors + @compile_pool.errors + @install_pool.errors
 
     if errors.empty?
       if output
@@ -262,6 +270,8 @@ class Gel::Installer
         raise Gel::Error::ExtensionDependencyError.new(dependency: dep, failure: "download")
       elsif @compile_pool.errors.any? { |(_, failed_name), ex| failed_name == dep }
         raise Gel::Error::ExtensionDependencyError.new(dependency: dep, failure: "compile")
+      elsif @install_pool.errors.any? { |(_, failed_name), ex| failed_name == dep }
+        raise Gel::Error::ExtensionDependencyError.new(dependency: dep, failure: "install")
       elsif @pending[dep] == 0
         compile_ready?(dep)
       else
