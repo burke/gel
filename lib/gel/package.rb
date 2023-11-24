@@ -137,7 +137,76 @@ module Gel
       end
     end
 
+    def self.verify_checksum(dir, filename, checksums)
+      checked = false
+      checksums.each do |type, map|
+        if (expected_sum = map[filename])
+          algo = case type
+          when "SHA1"
+            "1"
+          when "SHA512"
+            "512"
+          else
+            next
+          end
+          out, err, stat = Open3.capture3("shasum", "-a", algo, File.join(dir, filename))
+          raise "shasum failed: #{err}" unless stat.success?
+          found_sum, _ = out.split(/\s+/, 2)
+          raise "#{type} checksum mismatch on #{filename}" unless found_sum == expected_sum
+          checked = true
+        end
+      end
+
+      unless checked
+        raise "no checksum for #{filename}"
+      end
+    end
+
     def self.extract(filename, receiver)
+      require "tmpdir"
+      require "open3"
+      Dir.mktmpdir do |dir|
+        _, err, stat = Open3.capture3("tar", "-C", dir, "-xf", filename)
+        raise "tar failed: #{err}" unless stat.success?
+
+        if File.exist?(File.join(dir, 'checksums.yaml.gz'))
+          yaml = File.open(File.join(dir, 'checksums.yaml.gz')) do |f|
+            gz = Zlib::GzipReader.new(f)
+            yaml = gz.read
+            gz.close
+            yaml
+          end
+
+          sums = if Psych::VERSION < "3.1" # Ruby 2.5 & below
+            ::YAML.safe_load(yaml, [], [], false, "#{filename}:checksums.yaml.gz")
+          else
+            ::YAML.safe_load(yaml, filename: "#{filename}:checksums.yaml.gz")
+          end
+
+          verify_checksum(dir, "metadata.gz", sums)
+          verify_checksum(dir, "data.tar.gz", sums)
+        end
+
+        yaml = File.open(File.join(dir, 'metadata.gz')) do |f|
+          gz = Zlib::GzipReader.new(f)
+          yaml = gz.read
+          gz.close
+          yaml
+        end
+        loaded = YAMLLoader.load(yaml, "#{filename}:metadata.gz")
+        spec = Specification.new(loaded)
+
+        return receiver.gem(spec) do |target|
+          data_dir = File.join(dir, 'data')
+          FileUtils.mkdir(data_dir)
+          _, err, stat = Open3.capture3("tar", "-C", data_dir, "-xf", File.join(dir, 'data.tar.gz'))
+          # Now for every file unpacked...
+          target.ingest(data_dir)
+        end
+      end
+    end
+
+    def self.extract2(filename, receiver)
       File.open(filename) do |io|
         Gel::Support::Tar::TarReader.new(io) do |package_reader|
           sums = with_file(package_reader, "checksums.yaml.gz", nil) do |sum_stream|

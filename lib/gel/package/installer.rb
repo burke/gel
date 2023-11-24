@@ -11,6 +11,10 @@ class Gel::Package::Installer
     @store = store
   end
 
+  def gem_root(name, version)
+    @store.gem_root(name, version)
+  end
+
   def gem(spec)
     g = GemInstaller.new(spec, @store)
     begin
@@ -293,6 +297,54 @@ class Gel::Package::Installer
           end
 
         store.add_lib(spec.name, location, basenames)
+      end
+    end
+
+    def ingest(dir)
+      files = Dir.glob(File.join(dir, "**", "*")).map { |f| f[dir.size + 1..-1] }
+      if files.empty?
+        raise "no files in #{dir}"
+      end
+
+      executable = {}
+      spec.executables.each do |exe|
+        executable["#{spec.bindir}/#{exe}"] = exe
+      end
+
+      files.each do |short|
+        full = File.join(dir, short)
+        stat = File.stat(full)
+        if stat.directory? && stat.mode != 0755
+          File.chmod(0755, full)
+        else
+          source_mode = stat.mode & 0777
+          mode = 0444
+          mode |= source_mode & 0200
+          mode |= 0111 if source_mode & 0111 != 0
+          if (exe = executable[short])
+            mode |= 0111
+            # Wrong: not final location yet
+          end
+          File.chmod(mode, full)
+        end
+      end
+
+      File.unlink(root) if Dir.exist?(root)
+      Gel::Util.mkdir_p(File.dirname(root))
+      FileUtils.mv(dir, root)
+
+      executable.each do |short, exe|
+        if files.include?(short)
+          @root_store.stub_set.add(File.basename(@store.root), [exe])
+        end
+      end
+
+      spec.require_paths.each do |reqp|
+        @files[reqp].concat(
+          files
+            .select { |f| f.start_with?("#{reqp}/") }
+            .map { |f| f[reqp.size + 1..-1] }
+        )
       end
     end
 

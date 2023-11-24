@@ -12,8 +12,8 @@ class Gel::Installer
   class SkipCatalog < Exception
   end
 
-  DOWNLOAD_CONCURRENCY = 6
-  COMPILE_CONCURRENCY = 4
+  DOWNLOAD_CONCURRENCY = 12
+  COMPILE_CONCURRENCY = 6
 
   include MonitorMixin
 
@@ -168,8 +168,10 @@ class Gel::Installer
 
   def work_install(g)
     if g.is_a?(Gel::Package::Installer::GemInstaller)
-      @messages << "Installing #{g.spec.name} (#{g.spec.version})\n"
+      t = Time.now
       g.install
+      te = Time.now-t
+      @messages << "Installed #{g.spec.name} (#{g.spec.version}) in #{te}\n"
     end
 
     clear_pending(g.spec.name)

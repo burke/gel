@@ -92,7 +92,11 @@ class Gel::LockLoader
                 catalog_infos.each do |info|
                   s = rg.platform ? "#{rg.version}-#{rg.platform}" : rg.version
                   if i = info[s]
-                    if i[:ruby] && !Gel::Support::GemRequirement.new(i[:ruby].split("&")).satisfied_by?(Gel::Support::GemVersion.new(RUBY_VERSION))
+                    ruby = i[:ruby]
+                    # TODO: is this ever not a proc->array?
+                    ruby = ruby.call if ruby.respond_to?(:call)
+                    ruby = ruby.split("&") if ruby.is_a?(String)
+                    if ruby && !Gel::Support::GemRequirement.new(ruby).satisfied_by?(Gel::Support::GemVersion.new(RUBY_VERSION))
                       skipped_matches << s
                     else
                       resolved_gem = rg
