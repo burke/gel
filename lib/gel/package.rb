@@ -163,6 +163,10 @@ module Gel
     end
 
     def self.extract(filename, receiver)
+      if Gem.win_platform? || ENV["GEL_PURE_RUBY_TAR"]
+        return extract_with_pure_ruby_tar(filename, receiver)
+      end
+
       require "tmpdir"
       require "open3"
       Dir.mktmpdir do |dir|
@@ -211,7 +215,7 @@ module Gel
       end
     end
 
-    def self.extract2(filename, receiver)
+    def self.extract_with_pure_ruby_tar(filename, receiver)
       File.open(filename) do |io|
         Gel::Support::Tar::TarReader.new(io) do |package_reader|
           sums = with_file(package_reader, "checksums.yaml.gz", nil) do |sum_stream|
