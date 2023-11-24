@@ -176,10 +176,8 @@ class Gel::Installer
 
   def work_install(g)
     if g.is_a?(Gel::Package::Installer::GemInstaller)
-      t = Time.now
       g.install
-      te = Time.now-t
-      @messages << "Installed #{g.spec.name} (#{g.spec.version}) in #{te}\n"
+      @messages << "Installed #{g.spec.name} (#{g.spec.version})\n"
     end
 
     clear_pending(g.spec.name)
