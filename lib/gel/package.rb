@@ -170,6 +170,7 @@ module Gel
         raise "tar failed: #{err}" unless stat.success?
 
         if File.exist?(File.join(dir, 'checksums.yaml.gz'))
+          # This feels ugly. There is a definitely a nicer way.
           yaml = File.open(File.join(dir, 'checksums.yaml.gz')) do |f|
             gz = Zlib::GzipReader.new(f)
             yaml = gz.read
@@ -183,10 +184,14 @@ module Gel
             ::YAML.safe_load(yaml, filename: "#{filename}:checksums.yaml.gz")
           end
 
+          # probably better to just verify whatever checksums exist.
+          # And probably error on algorithms we don't know?
           verify_checksum(dir, "metadata.gz", sums)
           verify_checksum(dir, "data.tar.gz", sums)
+          # We could also verify signatures. I guess.
         end
 
+        # This feels ugly. There is a definitely a nicer way.
         yaml = File.open(File.join(dir, 'metadata.gz')) do |f|
           gz = Zlib::GzipReader.new(f)
           yaml = gz.read
@@ -200,7 +205,7 @@ module Gel
           data_dir = File.join(dir, 'data')
           FileUtils.mkdir(data_dir)
           _, err, stat = Open3.capture3("tar", "-C", data_dir, "-xf", File.join(dir, 'data.tar.gz'))
-          # Now for every file unpacked...
+          raise "tar failed: #{err}" unless stat.success?
           target.ingest(data_dir)
         end
       end
